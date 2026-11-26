@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode, type SVGProps } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject, type SVGProps } from 'react';
 import { brl } from '../lib/format';
 import type { Background } from '../lib/appearance';
 
@@ -179,4 +179,63 @@ export function useGlassLight() {
     document.addEventListener('pointermove', onMove, { passive: true });
     return () => document.removeEventListener('pointermove', onMove);
   }, []);
+}
+
+type Rect = { x: number; y: number; w: number; h: number };
+
+const frame = (r: Rect, squeeze = 1) => ({
+  transform: `translate(${r.x}px, ${r.y}px) scale(${squeeze}, ${2 - squeeze})`,
+  width: `${r.w}px`,
+  height: `${r.h}px`,
+});
+
+export function useSlidingPill(container: RefObject<HTMLElement | null>, activeKey: string) {
+  const last = useRef<Rect | null>(null);
+
+  useLayoutEffect(() => {
+    const box = container.current;
+    const pill = box?.querySelector<HTMLElement>(':scope > .nav-pill');
+    if (!box || !pill) return;
+
+    const place = (animate: boolean) => {
+      const active = box.querySelector<HTMLElement>('[aria-current="page"]');
+      if (!active || !active.offsetParent) return;
+      const b = box.getBoundingClientRect();
+      const a = active.getBoundingClientRect();
+      const next = {
+        x: a.left - b.left - box.clientLeft + box.scrollLeft,
+        y: a.top - b.top - box.clientTop + box.scrollTop,
+        w: a.width,
+        h: a.height,
+      };
+      const from = last.current;
+      last.current = next;
+      Object.assign(pill.style, frame(next), { opacity: '1' });
+      if (!animate || !from || reducedMotion()) return;
+
+      const x = Math.min(from.x, next.x);
+      const y = Math.min(from.y, next.y);
+      const stretched = {
+        x,
+        y,
+        w: Math.max(from.x + from.w, next.x + next.w) - x,
+        h: Math.max(from.y + from.h, next.y + next.h) - y,
+      };
+      const horizontal = Math.abs(next.x - from.x) > Math.abs(next.y - from.y);
+      pill.animate(
+        [
+          frame(from),
+          { ...frame(stretched, horizontal ? 1 : 0.94), offset: 0.42 },
+          { ...frame(next, horizontal ? 0.96 : 1.03), offset: 0.75 },
+          frame(next),
+        ],
+        { duration: 560, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' },
+      );
+    };
+
+    place(true);
+    const observer = new ResizeObserver(() => place(false));
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [container, activeKey]);
 }

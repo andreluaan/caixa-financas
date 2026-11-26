@@ -4,7 +4,7 @@ import { isConfigured, supabase } from './lib/supabase';
 import { StoreProvider, useStore } from './lib/store';
 import { isDemo } from './lib/demo';
 import { backgrounds, useAppearance, type Appearance } from './lib/appearance';
-import { Backdrop, Icon, MemoryMark, useGlassLight, type IconName } from './components/ui';
+import { Backdrop, Icon, MemoryMark, useGlassLight, useSlidingPill, type IconName } from './components/ui';
 import { Login } from './pages/Login';
 import { Overview } from './pages/Overview';
 import { Transactions } from './pages/Transactions';
@@ -15,13 +15,13 @@ import { Import } from './pages/Import';
 
 export type Route = 'overview' | 'transactions' | 'import' | 'budgets' | 'goals' | 'accounts';
 
-const routes: { id: Route; label: string; icon: IconName; group: string }[] = [
-  { id: 'overview', label: 'Visão geral', icon: 'home', group: 'Geral' },
-  { id: 'transactions', label: 'Transações', icon: 'list', group: 'Geral' },
-  { id: 'import', label: 'Importar extrato', icon: 'upload', group: 'Geral' },
-  { id: 'budgets', label: 'Orçamentos', icon: 'pie', group: 'Planejar' },
-  { id: 'goals', label: 'Metas', icon: 'target', group: 'Planejar' },
-  { id: 'accounts', label: 'Contas e cartões', icon: 'card', group: 'Planejar' },
+const routes: { id: Route; label: string; short: string; icon: IconName; group: string }[] = [
+  { id: 'overview', label: 'Visão geral', short: 'Início', icon: 'home', group: 'Geral' },
+  { id: 'transactions', label: 'Transações', short: 'Transações', icon: 'list', group: 'Geral' },
+  { id: 'import', label: 'Importar extrato', short: 'Importar', icon: 'upload', group: 'Geral' },
+  { id: 'budgets', label: 'Orçamentos', short: 'Orçamento', icon: 'pie', group: 'Planejar' },
+  { id: 'goals', label: 'Metas', short: 'Metas', icon: 'target', group: 'Planejar' },
+  { id: 'accounts', label: 'Contas e cartões', short: 'Contas', icon: 'card', group: 'Planejar' },
 ];
 
 function readRoute(): Route {
@@ -63,12 +63,30 @@ function AppearanceButtons({ look }: { look: Appearance }) {
   );
 }
 
+function TabBar({ route }: { route: Route }) {
+  const bar = useRef<HTMLElement>(null);
+  useSlidingPill(bar, route);
+  return (
+    <nav ref={bar} className="glass tabbar" aria-label="Seções">
+      <span className="nav-pill" aria-hidden="true" />
+      {routes.map((r) => (
+        <a key={r.id} className="tab" href={`#/${r.id}`} aria-current={route === r.id ? 'page' : undefined}>
+          <Icon name={r.icon} size={20} />
+          <span>{r.short}</span>
+        </a>
+      ))}
+    </nav>
+  );
+}
+
 function Shell({ session, look }: { session: Session; look: Appearance }) {
   const [route, go] = useRoute();
   const { loading, error, clearError } = useStore();
   const groups = [...new Set(routes.map((r) => r.group))];
   const page = useRef<HTMLDivElement>(null);
+  const nav = useRef<HTMLElement>(null);
   useGlassLight();
+  useSlidingPill(nav, route);
 
   useLayoutEffect(() => {
     page.current?.querySelectorAll<HTMLElement>('.glass').forEach((el, i) => el.style.setProperty('--i', String(i)));
@@ -84,7 +102,8 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
             <span className="mono" style={{ fontSize: 10 }}>andreluaan.dev</span>
           </div>
         </div>
-        <nav className="nav" aria-label="Principal">
+        <nav ref={nav} className="nav" aria-label="Principal">
+          <span className="nav-pill" aria-hidden="true" />
           {groups.map((group) => (
             <div key={group} className="nav-group">
               <span className="mono nav-label">{group}</span>
@@ -123,6 +142,8 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
           </div>
         )}
       </div>
+
+      <TabBar route={route} />
 
       {error && (
         <div className="glass toast error" role="alert">
