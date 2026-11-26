@@ -6,6 +6,7 @@ import { isDemo } from './lib/demo';
 import { backgrounds, useAppearance, type Appearance } from './lib/appearance';
 import { Backdrop, Icon, InstallHint, MemoryMark, Sheet, useGlassLight, useLiquidNav, type IconName } from './components/ui';
 import { QuickAdd } from './components/QuickAdd';
+import { HelpButton } from './components/Help';
 import { Login } from './pages/Login';
 import { Overview } from './pages/Overview';
 
@@ -175,6 +176,7 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
             {(session.user.email ?? '?').charAt(0).toUpperCase()}
           </div>
           <span className="muted" style={{ fontSize: 12, flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{session.user.email}</span>
+          <HelpButton route={route} />
           <AppearanceButtons look={look} />
           <button type="button" className="icon-btn" aria-label="Sair" disabled={isDemo} onClick={() => void supabase.auth.signOut()}>
             <Icon name="logout" size={16} />
