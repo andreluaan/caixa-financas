@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { isConfigured, supabase } from './lib/supabase';
 import { StoreProvider, useStore } from './lib/store';
@@ -7,11 +7,29 @@ import { backgrounds, useAppearance, type Appearance } from './lib/appearance';
 import { Backdrop, Icon, MemoryMark, useGlassLight, useLiquidNav, type IconName } from './components/ui';
 import { Login } from './pages/Login';
 import { Overview } from './pages/Overview';
-import { Transactions } from './pages/Transactions';
-import { Budgets } from './pages/Budgets';
-import { Goals } from './pages/Goals';
-import { Accounts } from './pages/Accounts';
-import { Import } from './pages/Import';
+
+const pages = {
+  transactions: () => import('./pages/Transactions').then((m) => ({ default: m.Transactions })),
+  budgets: () => import('./pages/Budgets').then((m) => ({ default: m.Budgets })),
+  goals: () => import('./pages/Goals').then((m) => ({ default: m.Goals })),
+  accounts: () => import('./pages/Accounts').then((m) => ({ default: m.Accounts })),
+  import: () => import('./pages/Import').then((m) => ({ default: m.Import })),
+};
+const Transactions = lazy(pages.transactions);
+const Budgets = lazy(pages.budgets);
+const Goals = lazy(pages.goals);
+const Accounts = lazy(pages.accounts);
+const Import = lazy(pages.import);
+
+function Stagger() {
+  const mark = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    mark.current?.parentElement?.querySelectorAll<HTMLElement>('.glass').forEach((el, i) => {
+      if (!el.style.getPropertyValue('--i')) el.style.setProperty('--i', String(i));
+    });
+  });
+  return <span ref={mark} hidden />;
+}
 
 export type Route = 'overview' | 'transactions' | 'import' | 'budgets' | 'goals' | 'accounts';
 
@@ -83,14 +101,15 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
   const [route, go] = useRoute();
   const { loading, error, clearError } = useStore();
   const groups = [...new Set(routes.map((r) => r.group))];
-  const page = useRef<HTMLDivElement>(null);
   const nav = useRef<HTMLElement>(null);
   useGlassLight();
   useLiquidNav(nav, route, (key) => go(key as Route), 'y');
 
-  useLayoutEffect(() => {
-    page.current?.querySelectorAll<HTMLElement>('.glass').forEach((el, i) => el.style.setProperty('--i', String(i)));
-  }, [route, loading]);
+  useEffect(() => {
+    const warm = () => Object.values(pages).forEach((load) => void load());
+    const id = 'requestIdleCallback' in window ? requestIdleCallback(warm) : setTimeout(warm, 1500);
+    return () => ('cancelIdleCallback' in window ? cancelIdleCallback(id) : clearTimeout(id));
+  }, []);
 
   return (
     <div className="shell">
@@ -132,13 +151,16 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
         {loading ? (
           <div className="glass panel"><span className="muted">Carregando…</span></div>
         ) : (
-          <div key={route} ref={page} className="page">
-            {route === 'overview' && <Overview go={go} />}
-            {route === 'transactions' && <Transactions />}
-            {route === 'import' && <Import />}
-            {route === 'budgets' && <Budgets />}
-            {route === 'goals' && <Goals />}
-            {route === 'accounts' && <Accounts />}
+          <div key={route} className="page">
+            <Suspense fallback={null}>
+              {route === 'overview' && <Overview go={go} />}
+              {route === 'transactions' && <Transactions />}
+              {route === 'import' && <Import />}
+              {route === 'budgets' && <Budgets />}
+              {route === 'goals' && <Goals />}
+              {route === 'accounts' && <Accounts />}
+              <Stagger />
+            </Suspense>
           </div>
         )}
       </div>

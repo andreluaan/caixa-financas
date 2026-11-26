@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject, type SVGProps } from 'react';
+import { useEffect, useLayoutEffect, useRef, type ReactNode, type RefObject, type SVGProps } from 'react';
 import { brl } from '../lib/format';
 import type { Background } from '../lib/appearance';
 
@@ -140,47 +140,60 @@ export function Field({ label, children, className }: { label: string; children:
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export function Money({ value, duration = 900 }: { value: number; duration?: number }) {
-  const [shown, setShown] = useState(reducedMotion() ? value : 0);
-  const from = useRef(shown);
+  const node = useRef<HTMLSpanElement>(null);
+  const shown = useRef(reducedMotion() ? value : 0);
 
-  useEffect(() => {
-    if (reducedMotion()) {
-      setShown(value);
+  useLayoutEffect(() => {
+    const el = node.current;
+    if (!el) return;
+    const origin = shown.current;
+    el.textContent = brl(origin);
+    if (origin === value || reducedMotion()) {
+      shown.current = value;
+      el.textContent = brl(value);
       return;
     }
     const start = performance.now();
-    const origin = from.current;
     let frame = 0;
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 4);
-      const next = origin + (value - origin) * eased;
-      from.current = next;
-      setShown(next);
+      shown.current = origin + (value - origin) * (1 - Math.pow(1 - t, 4));
+      el.textContent = brl(shown.current);
       if (t < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [value, duration]);
 
-  return <>{brl(shown)}</>;
+  return <span ref={node} />;
 }
 
 export function useGlassLight() {
   useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      if (e.pointerType !== 'mouse') return;
-      const el = (e.target as Element | null)?.closest?.('.glass') as HTMLElement | null;
-      if (!el) return;
+    if (!matchMedia('(hover: hover)').matches) return;
+    let frame = 0;
+    let event: PointerEvent | null = null;
+    const paint = () => {
+      frame = 0;
+      const e = event;
+      const el = (e?.target as Element | null)?.closest?.('.glass') as HTMLElement | null;
+      if (!e || !el) return;
       const r = el.getBoundingClientRect();
       el.style.setProperty('--mx', `${e.clientX - r.left}px`);
       el.style.setProperty('--my', `${e.clientY - r.top}px`);
     };
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      event = e;
+      if (!frame) frame = requestAnimationFrame(paint);
+    };
     document.addEventListener('pointermove', onMove, { passive: true });
-    return () => document.removeEventListener('pointermove', onMove);
+    return () => {
+      document.removeEventListener('pointermove', onMove);
+      cancelAnimationFrame(frame);
+    };
   }, []);
 }
-
 type Rect = { x: number; y: number; w: number; h: number };
 
 const frame = (r: Rect, sx = 1, sy = 1) => ({
@@ -267,8 +280,7 @@ export function useLiquidNav(
 
     const lensAt = (pos: number) => {
       if (!base) return;
-      const b = box.getBoundingClientRect();
-      const local = axis === 'x' ? pos - b.left - box.clientLeft : pos - b.top - box.clientTop;
+      const local = axis === 'x' ? pos - origin.left : pos - origin.top;
       const grow = axis === 'x' ? { w: base.w * 1.08, h: base.h * 1.34 } : { w: base.w * 1.02, h: base.h * 1.4 };
       const span = axis === 'x' ? box.clientWidth : box.clientHeight;
       const size = axis === 'x' ? grow.w : grow.h;
@@ -295,12 +307,13 @@ export function useLiquidNav(
       }
     };
 
+    let centers: { el: HTMLElement; c: number }[] = [];
+    let origin = { left: 0, top: 0 };
     const closest = (center: number) => {
       let best: HTMLElement | null = null;
       let distance = Infinity;
-      for (const el of items()) {
-        const r = rectOf(el, box);
-        const d = Math.abs((axis === 'x' ? r.x + r.w / 2 : r.y + r.h / 2) - center);
+      for (const { el, c } of centers) {
+        const d = Math.abs(c - center);
         if (d < distance) {
           distance = d;
           best = el;
@@ -320,6 +333,12 @@ export function useLiquidNav(
       }
       const target = (e.target as Element).closest<HTMLElement>('[data-key]') ?? items()[0];
       base = target ? rectOf(target, box) : last.current;
+      const b = box.getBoundingClientRect();
+      origin = { left: b.left + box.clientLeft, top: b.top + box.clientTop };
+      centers = items().map((el) => {
+        const r = rectOf(el, box);
+        return { el, c: axis === 'x' ? r.x + r.w / 2 : r.y + r.h / 2 };
+      });
       lastPos = axis === 'x' ? e.clientX : e.clientY;
       lastTime = performance.now();
       stretch = 1;
