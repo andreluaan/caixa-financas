@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { isConfigured, supabase } from './lib/supabase';
 import { StoreProvider, useStore } from './lib/store';
 import { isDemo } from './lib/demo';
 import { backgrounds, useAppearance, type Appearance } from './lib/appearance';
-import { Backdrop, Icon, MemoryMark, type IconName } from './components/ui';
+import { Backdrop, Icon, MemoryMark, useGlassLight, type IconName } from './components/ui';
 import { Login } from './pages/Login';
 import { Overview } from './pages/Overview';
 import { Transactions } from './pages/Transactions';
@@ -52,7 +52,7 @@ function AppearanceButtons({ look }: { look: Appearance }) {
         className="icon-btn"
         aria-label={look.theme === 'dark' ? 'Usar tema claro' : 'Usar tema escuro'}
         title={look.theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
-        onClick={look.toggleTheme}
+        onClick={(e) => look.toggleTheme(e.clientX || undefined, e.clientY || undefined)}
       >
         <Icon name={look.theme === 'dark' ? 'sun' : 'moon'} size={16} />
       </button>
@@ -67,6 +67,12 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
   const [route, go] = useRoute();
   const { loading, error, clearError } = useStore();
   const groups = [...new Set(routes.map((r) => r.group))];
+  const page = useRef<HTMLDivElement>(null);
+  useGlassLight();
+
+  useLayoutEffect(() => {
+    page.current?.querySelectorAll<HTMLElement>('.glass').forEach((el, i) => el.style.setProperty('--i', String(i)));
+  }, [route, loading]);
 
   return (
     <div className="shell">
@@ -107,14 +113,14 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
         {loading ? (
           <div className="glass panel"><span className="muted">Carregando…</span></div>
         ) : (
-          <>
+          <div key={route} ref={page} className="page">
             {route === 'overview' && <Overview go={go} />}
             {route === 'transactions' && <Transactions />}
             {route === 'import' && <Import />}
             {route === 'budgets' && <Budgets />}
             {route === 'goals' && <Goals />}
             {route === 'accounts' && <Accounts />}
-          </>
+          </div>
         )}
       </div>
 

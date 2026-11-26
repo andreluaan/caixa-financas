@@ -1,4 +1,5 @@
-import type { ReactNode, SVGProps } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type SVGProps } from 'react';
+import { brl } from '../lib/format';
 import type { Background } from '../lib/appearance';
 
 const paths = {
@@ -134,4 +135,48 @@ export function Field({ label, children, className }: { label: string; children:
       {children}
     </label>
   );
+}
+
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+export function Money({ value, duration = 900 }: { value: number; duration?: number }) {
+  const [shown, setShown] = useState(reducedMotion() ? value : 0);
+  const from = useRef(shown);
+
+  useEffect(() => {
+    if (reducedMotion()) {
+      setShown(value);
+      return;
+    }
+    const start = performance.now();
+    const origin = from.current;
+    let frame = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 4);
+      const next = origin + (value - origin) * eased;
+      from.current = next;
+      setShown(next);
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value, duration]);
+
+  return <>{brl(shown)}</>;
+}
+
+export function useGlassLight() {
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      const el = (e.target as Element | null)?.closest?.('.glass') as HTMLElement | null;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', `${e.clientX - r.left}px`);
+      el.style.setProperty('--my', `${e.clientY - r.top}px`);
+    };
+    document.addEventListener('pointermove', onMove, { passive: true });
+    return () => document.removeEventListener('pointermove', onMove);
+  }, []);
 }

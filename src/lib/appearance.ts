@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 
 export type Theme = 'dark' | 'light';
 export type Background = 'tinta' | 'memoria';
@@ -33,7 +34,25 @@ export function useAppearance() {
     localStorage.setItem('caixa.bg', background);
   }, [background]);
 
-  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = (x = innerWidth / 2, y = innerHeight / 2) => {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+    const apply = () => {
+      document.documentElement.dataset.theme = next;
+      flushSync(() => setTheme(next));
+    };
+    if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      apply();
+      return;
+    }
+    const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    const transition = document.startViewTransition(apply);
+    void transition.ready.then(() => {
+      document.documentElement.animate(
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+        { duration: 700, easing: 'cubic-bezier(0.7, 0, 0.2, 1)', pseudoElement: '::view-transition-new(root)' },
+      );
+    });
+  };
   const nextBackground = () =>
     setBackground((b) => backgrounds[(backgrounds.findIndex((x) => x.id === b) + 1) % backgrounds.length].id);
 

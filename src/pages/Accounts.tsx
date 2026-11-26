@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useStore } from '../lib/store';
 import { accountBalance, billStatus, invoiceTotal } from '../lib/calc';
 import { brl, parseMoney, shortDate, shortMonth, today } from '../lib/format';
-import { Field, Icon, Panel, Progress } from '../components/ui';
+import { Field, Icon, Money, Panel, Progress } from '../components/ui';
 import type { AccountKind, Bill } from '../lib/types';
 
 const kindLabel: Record<AccountKind, string> = {
@@ -237,7 +237,7 @@ export function Accounts() {
                       <span className="muted" style={{ fontSize: 12 }}>
                         Fatura {shortDate(invoice.start)} a {shortDate(invoice.end)} · vence {shortDate(invoice.due)}
                       </span>
-                      <span className="num" style={{ fontSize: 24 }}>{brl(invoice.total)}</span>
+                      <span className="num" style={{ fontSize: 24 }}><Money value={invoice.total} /></span>
                     </div>
                   </div>
                   {card.credit_limit ? (
@@ -262,7 +262,7 @@ export function Accounts() {
                   <span className="title">{a.name}</span>
                   <span className="sub">{kindLabel[a.kind]}</span>
                 </div>
-                <span className="amount in">{brl(accountBalance(a, transactions))}</span>
+                <span className="amount in"><Money value={accountBalance(a, transactions)} /></span>
                 <button
                   type="button"
                   className="icon-btn danger"

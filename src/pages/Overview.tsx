@@ -4,7 +4,7 @@ import { billStatus, budgetUsage, invoiceTotal, monthTotals, spendingByMonth } f
 import { brl, currentMonth, longMonth, shortDate, shortMonth } from '../lib/format';
 import { QuickAdd } from '../components/QuickAdd';
 import { TransactionList } from '../components/TransactionList';
-import { Panel, Progress } from '../components/ui';
+import { Money, Panel, Progress } from '../components/ui';
 import type { Kind } from '../lib/types';
 import type { Route } from '../App';
 
@@ -48,19 +48,19 @@ export function Overview({ go }: { go: (r: Route) => void }) {
           <div className="kpis">
             <div className="glass-2 kpi">
               <span className="mono">Saldo do mês</span>
-              <span className="value num">{brl(totals.balance)}</span>
+              <span className="value num"><Money value={totals.balance} /></span>
               <span className="muted" style={{ fontSize: 12 }}>
                 {totals.income === 0 ? 'Nenhuma entrada ainda' : totals.balance >= 0 ? `Você guardou ${savedPct}% do que entrou` : 'Gastou mais do que entrou'}
               </span>
             </div>
             <div className="glass-2 kpi">
               <span className="mono">Entradas</span>
-              <span className="value num">{brl(totals.income)}</span>
+              <span className="value num"><Money value={totals.income} /></span>
               <span className="muted" style={{ fontSize: 12 }}>{totals.inCount} lançamento{totals.inCount === 1 ? '' : 's'}</span>
             </div>
             <div className="glass-2 kpi">
               <span className="mono">Saídas</span>
-              <span className="value num">{brl(totals.expense)}</span>
+              <span className="value num"><Money value={totals.expense} /></span>
               <span className="muted" style={{ fontSize: 12 }}>{totals.outCount} lançamento{totals.outCount === 1 ? '' : 's'}</span>
             </div>
           </div>
@@ -113,13 +113,13 @@ export function Overview({ go }: { go: (r: Route) => void }) {
       <aside className="rail">
         <Panel title="Gasto mensal" action={<span className="mono">6 meses</span>}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span className="num" style={{ fontSize: 34, fontWeight: 300, letterSpacing: '-0.03em' }}>{brl(totals.expense)}</span>
+            <span className="num" style={{ fontSize: 34, fontWeight: 300, letterSpacing: '-0.03em' }}><Money value={totals.expense} /></span>
             <span className="muted" style={{ fontSize: 12 }}>em {longMonth(month)}</span>
           </div>
           <div className="bars" role="img" aria-label={`Gasto mensal: ${history.map((h) => `${shortMonth(h.month)} ${brl(h.total)}`).join(', ')}`}>
             {history.map((h, i) => (
               <div key={h.month} className="col">
-                <div className={`bar ${i === history.length - 1 ? 'now' : ''}`} style={{ height: `${(h.total / max) * 88}px` }} />
+                <div className={`bar ${i === history.length - 1 ? 'now' : ''}`} style={{ height: `${(h.total / max) * 88}px`, ['--i' as string]: i }} />
                 <span className="mono" style={{ fontSize: 10 }}>{shortMonth(h.month)}</span>
               </div>
             ))}
@@ -174,7 +174,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
               <span className="mono" style={{ color: 'var(--ink-2)' }}>{card.name}</span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <span className="muted" style={{ fontSize: 12 }}>Fatura atual · vence {shortDate(invoice.due)}</span>
-                <span className="num" style={{ fontSize: 24 }}>{brl(invoice.total)}</span>
+                <span className="num" style={{ fontSize: 24 }}><Money value={invoice.total} /></span>
               </div>
             </div>
             {card.credit_limit ? (

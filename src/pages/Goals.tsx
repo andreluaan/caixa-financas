@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useStore } from '../lib/store';
 import { brl, parseMoney, shortDate } from '../lib/format';
-import { Field, Icon, Panel, Progress } from '../components/ui';
+import { Field, Icon, Money, Panel, Progress } from '../components/ui';
 import type { Goal } from '../lib/types';
 
 function GoalCard({ goal }: { goal: Goal }) {
@@ -32,7 +32,7 @@ function GoalCard({ goal }: { goal: Goal }) {
           <Icon name="trash" size={15} />
         </button>
       </div>
-      <span className="num" style={{ fontSize: 24, fontWeight: 300 }}>{brl(goal.saved)}</span>
+      <span className="num" style={{ fontSize: 24, fontWeight: 300 }}><Money value={goal.saved} /></span>
       <Progress value={pct} label={`Meta ${goal.name}`} />
       <span className="muted" style={{ fontSize: 12 }}>
         {Math.round(pct)}% de {brl(goal.target)}
