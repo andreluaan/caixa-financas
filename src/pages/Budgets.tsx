@@ -22,7 +22,7 @@ export function Budgets() {
     <>
       <Panel
         title={`Orçamentos de ${longMonth(month)}`}
-        action={<AddButton label="Novo limite" onClick={() => setEditing('new')} />}
+        action={<AddButton label="Novo limite" onClick={() => setEditing('new')} tour="budget-new" />}
       >
         {usage.length === 0 ? (
           <p className="empty">Defina quanto quer gastar por categoria no mês.</p>

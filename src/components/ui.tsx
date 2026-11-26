@@ -133,9 +133,9 @@ export function Avatar({ label }: { label: string }) {
   );
 }
 
-export function Field({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
+export function Field({ label, children, className, tour }: { label: string; children: ReactNode; className?: string; tour?: string }) {
   return (
-    <label className={`label ${className ?? ''}`}>
+    <label className={`label ${className ?? ''}`} data-tour={tour}>
       <span className="mono">{label}</span>
       {children}
     </label>
@@ -462,9 +462,9 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   );
 }
 
-export function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
+export function AddButton({ label, onClick, tour }: { label: string; onClick: () => void; tour?: string }) {
   return (
-    <button type="button" className="pill add" onClick={onClick}>
+    <button type="button" className="pill add" onClick={onClick} data-tour={tour}>
       <Icon name="plus" size={14} strokeWidth={2.2} />
       {label}
     </button>

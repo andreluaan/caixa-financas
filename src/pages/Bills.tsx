@@ -79,7 +79,7 @@ export function Bills() {
 
   return (
     <>
-      <Panel title="Contas" action={<AddButton label="Nova" onClick={() => setEditing('new')} />}>
+      <Panel title="Contas" action={<AddButton label="Nova" onClick={() => setEditing('new')} tour="bill-new" />}>
         <div className="segmented wide two-line" role="group" aria-label="Mostrar">
           <button type="button" aria-pressed={tab === 'out'} onClick={() => setTab('out')}>
             <span>A pagar</span>

@@ -22,7 +22,7 @@ export function Accounts() {
   return (
     <div className="columns">
       <div className="main">
-        <Panel title="Cartões" action={<AddButton label="Novo" onClick={() => newAccount('credit')} />}>
+        <Panel title="Cartões" action={<AddButton label="Novo" onClick={() => newAccount('credit')} tour="card-new" />}>
           {cards.length === 0 && <p className="empty">Nenhum cartão cadastrado.</p>}
           <div className="grid-cards">
             {cards.map((card) => {

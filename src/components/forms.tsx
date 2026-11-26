@@ -7,18 +7,18 @@ import { Field, Icon, type IconName } from './ui';
 
 const money = (value: string) => Math.round(parseMoney(value) * 100) / 100;
 
-function Submit({ children, busy }: { children: ReactNode; busy?: boolean }) {
+function Submit({ children, busy, tour }: { children: ReactNode; busy?: boolean; tour?: string }) {
   return (
-    <button className="btn-primary" type="submit" disabled={busy}>
+    <button className="btn-primary" type="submit" disabled={busy} data-tour={tour}>
       <Icon name="check" size={15} strokeWidth={2.2} />
       {children}
     </button>
   );
 }
 
-function DayInput({ label, value, onChange, required }: { label: string; value: string; onChange: (v: string) => void; required?: boolean }) {
+function DayInput({ label, value, onChange, required, tour }: { label: string; value: string; onChange: (v: string) => void; required?: boolean; tour?: string }) {
   return (
-    <Field label={label}>
+    <Field label={label} tour={tour}>
       <input className="field num" type="number" inputMode="numeric" min={1} max={31} placeholder="1–31" required={required} value={value} onChange={(e) => onChange(e.target.value)} />
     </Field>
   );
@@ -66,20 +66,20 @@ export function BillForm({ bill, initialKind = 'out', onDone }: { bill?: Bill; i
         <button type="button" aria-pressed={kind === 'out'} onClick={() => setKind('out')}>A pagar</button>
         <button type="button" aria-pressed={kind === 'in'} onClick={() => setKind('in')}>A receber</button>
       </div>
-      <Field label={kind === 'in' ? 'De onde vem' : 'O que é'}>
+      <Field label={kind === 'in' ? 'De onde vem' : 'O que é'} tour="bill-name">
         <input className="field" autoFocus={!bill} required maxLength={60} placeholder={kind === 'in' ? 'Salário, aluguel recebido…' : 'Internet, aluguel, IPVA…'} value={name} onChange={(e) => setName(e.target.value)} />
       </Field>
-      <Field label="Valor · R$">
+      <Field label="Valor · R$" tour="bill-amount">
         <input className="field num" required inputMode="decimal" placeholder="0,00" value={amount} onChange={(e) => setAmount(e.target.value)} />
       </Field>
-      <div className="segmented wide" role="group" aria-label="Frequência">
+      <div className="segmented wide" role="group" aria-label="Frequência" data-tour="bill-freq">
         <button type="button" aria-pressed={recurrence === 'monthly'} onClick={() => setRecurrence('monthly')}>Todo mês</button>
         <button type="button" aria-pressed={recurrence === 'once'} onClick={() => setRecurrence('once')}>Uma vez</button>
       </div>
       {recurrence === 'monthly' ? (
-        <DayInput label={kind === 'in' ? 'Cai todo dia' : 'Vence todo dia'} value={day} onChange={setDay} required />
+        <DayInput label={kind === 'in' ? 'Cai todo dia' : 'Vence todo dia'} value={day} onChange={setDay} required tour="bill-day" />
       ) : (
-        <Field label={kind === 'in' ? 'Data prevista' : 'Data de vencimento'}>
+        <Field label={kind === 'in' ? 'Data prevista' : 'Data de vencimento'} tour="bill-day">
           <input className="field" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
       )}
@@ -111,7 +111,7 @@ export function BillForm({ bill, initialKind = 'out', onDone }: { bill?: Bill; i
           </Field>
         </div>
       </details>
-      <Submit>{bill ? 'Salvar alterações' : 'Salvar'}</Submit>
+      <Submit tour="bill-submit">{bill ? 'Salvar alterações' : 'Salvar'}</Submit>
       {bill && (
         <button
           type="button"
@@ -175,16 +175,16 @@ export function NewAccountForm({ onDone, initialKind = 'checking' }: { onDone: (
           </button>
         ))}
       </div>
-      <Field label="Nome">
+      <Field label="Nome" tour="acc-name">
         <input className="field" maxLength={60} placeholder={current.placeholder} value={name} onChange={(e) => setName(e.target.value)} />
       </Field>
       {credit ? (
         <>
-          <div className="row">
+          <div className="row" data-tour="acc-days">
             <DayInput label="Fecha dia" value={closing} onChange={setClosing} required />
             <DayInput label="Vence dia" value={due} onChange={setDue} required />
           </div>
-          <Field label="Limite · R$ (opcional)">
+          <Field label="Limite · R$ (opcional)" tour="acc-limit">
             <input className="field num" inputMode="decimal" placeholder="0,00" value={limit} onChange={(e) => setLimit(e.target.value)} />
           </Field>
         </>
@@ -193,7 +193,7 @@ export function NewAccountForm({ onDone, initialKind = 'checking' }: { onDone: (
           <input className="field num" inputMode="decimal" placeholder="0,00" value={balance} onChange={(e) => setBalance(e.target.value)} />
         </Field>
       )}
-      <Submit>Adicionar {credit ? 'cartão' : 'conta'}</Submit>
+      <Submit tour="acc-submit">Adicionar {credit ? 'cartão' : 'conta'}</Submit>
     </form>
   );
 }
@@ -303,7 +303,7 @@ export function BudgetForm({ budget, onDone }: { budget?: Budget; onDone: () => 
   return (
     <form className="stack" onSubmit={submit}>
       {!budget && (
-        <Field label="Categoria">
+        <Field label="Categoria" tour="budget-cat">
           <select className="field" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             {free.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
@@ -322,10 +322,10 @@ export function BudgetForm({ budget, onDone }: { budget?: Budget; onDone: () => 
           </Field>
         </>
       )}
-      <Field label="Limite por mês · R$">
+      <Field label="Limite por mês · R$" tour="budget-limit">
         <input className="field num" autoFocus={!!budget} required inputMode="decimal" placeholder="0,00" value={limit} onChange={(e) => setLimit(e.target.value)} />
       </Field>
-      <Submit>{budget ? 'Salvar limite' : 'Criar limite'}</Submit>
+      <Submit tour="budget-submit">{budget ? 'Salvar limite' : 'Criar limite'}</Submit>
       {budget && (
         <button type="button" className="pill danger-text" onClick={() => void remove('budgets', budget.id).then(onDone)}>
           <Icon name="trash" size={14} />Remover limite

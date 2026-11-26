@@ -93,14 +93,14 @@ export function QuickAdd({ onDone }: { onDone?: () => void } = {}) {
   return (
     <form className="glass-2 quick-add" onSubmit={submit}>
       <div className="row">
-        <Field label="Descrição" className="grow">
+        <Field label="Descrição" className="grow" tour="qa-desc">
           <input className="field" type="text" placeholder="Ex.: Mercado da semana" maxLength={140} value={description} onChange={(e) => changeDescription(e.target.value)} />
         </Field>
-        <Field label={installments ? 'Valor total · R$' : 'Valor · R$'}>
+        <Field label={installments ? 'Valor total · R$' : 'Valor · R$'} tour="qa-amount">
           <input className="field num" type="text" inputMode="decimal" placeholder="0,00" value={amount} onChange={(e) => setAmount(e.target.value)} />
         </Field>
       </div>
-      <div className="split-row">
+      <div className="split-row" data-tour="qa-kind">
         <div className="segmented" role="group" aria-label="Tipo">
           <button type="button" aria-pressed={kind === 'out'} onClick={() => setKind('out')}>Saída</button>
           <button type="button" aria-pressed={kind === 'in'} onClick={() => setKind('in')}>Entrada</button>
@@ -158,7 +158,7 @@ export function QuickAdd({ onDone }: { onDone?: () => void } = {}) {
       </details>
       <div className="quick-actions">
         <span className="muted" role="status" style={{ fontSize: 12, flexGrow: 1 }}>{hint}</span>
-        <button type="submit" className="btn-primary" disabled={busy}>
+        <button type="submit" className="btn-primary" disabled={busy} data-tour="qa-submit">
           <Icon name="plus" size={14} strokeWidth={2.2} />
           Lançar
         </button>

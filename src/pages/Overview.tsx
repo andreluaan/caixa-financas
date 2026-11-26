@@ -48,22 +48,22 @@ export function Overview({ go }: { go: (r: Route) => void }) {
             <QuickAdd />
           </div>
           <div className="kpis">
-            <div className="glass-2 kpi">
+            <div className="glass-2 kpi" data-tour="kpi-have">
               <span className="mono">Tenho hoje</span>
               <span className="value big num"><Money value={have} /></span>
               <span className="delta">Somando contas e dinheiro, sem cartão</span>
             </div>
-            <div className="glass-2 kpi">
+            <div className="glass-2 kpi" data-tour="kpi-in">
               <span className="mono">Entrou em {shortMonth(month)}</span>
               <span className="value num" style={{ color: 'var(--c-in)' }}><Money value={totals.income} /></span>
               <span className="delta">{totals.inCount} lançamento{totals.inCount === 1 ? '' : 's'}</span>
             </div>
-            <div className="glass-2 kpi">
+            <div className="glass-2 kpi" data-tour="kpi-out">
               <span className="mono">Saiu em {shortMonth(month)}</span>
               <span className="value num" style={{ color: 'var(--c-out)' }}><Money value={totals.expense} /></span>
               <span className="delta">{totals.outCount} lançamento{totals.outCount === 1 ? '' : 's'}</span>
             </div>
-            <div className="glass-2 kpi">
+            <div className="glass-2 kpi" data-tour="kpi-forecast">
               <span className="mono">Sobra prevista</span>
               <span className="value num"><Money value={forecast} /></span>
               <span className="delta">
@@ -74,7 +74,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
           </div>
         </section>
 
-        <Panel title="Entradas e saídas" action={<span className="mono">6 meses</span>}>
+        <Panel className="tour-chart" title="Entradas e saídas" action={<span className="mono">6 meses</span>}>
           <FlowChart data={flow} />
         </Panel>
 
