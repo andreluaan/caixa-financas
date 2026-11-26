@@ -36,7 +36,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
               {shortMonth(month)} · {month.slice(0, 4)}
             </span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="desktop-only" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <h1 className="hero-title">
               Para onde vai{' '}
               <br />
@@ -44,7 +44,9 @@ export function Overview({ go }: { go: (r: Route) => void }) {
             </h1>
             <div className="cut" />
           </div>
-          <QuickAdd />
+          <div className="desktop-only">
+            <QuickAdd />
+          </div>
           <div className="kpis">
             <div className="glass-2 kpi">
               <span className="mono">Tenho hoje</span>

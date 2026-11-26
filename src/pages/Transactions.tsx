@@ -37,7 +37,9 @@ export function Transactions() {
               <Icon name="upload" size={14} />
               Importar
             </a>
-            <AddButton label="Lançar" onClick={() => setAdding(true)} />
+            <span className="desktop-only">
+              <AddButton label="Lançar" onClick={() => setAdding(true)} />
+            </span>
           </div>
         }
       >

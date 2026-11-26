@@ -80,12 +80,14 @@ export function Bills() {
   return (
     <>
       <Panel title="Contas" action={<AddButton label="Nova" onClick={() => setEditing('new')} />}>
-        <div className="segmented wide" role="group" aria-label="Mostrar">
+        <div className="segmented wide two-line" role="group" aria-label="Mostrar">
           <button type="button" aria-pressed={tab === 'out'} onClick={() => setTab('out')}>
-            A pagar · {brl(pending.toPay)}
+            <span>A pagar</span>
+            <span className="num">{brl(pending.toPay)}</span>
           </button>
           <button type="button" aria-pressed={tab === 'in'} onClick={() => setTab('in')}>
-            A receber · {brl(pending.toReceive)}
+            <span>A receber</span>
+            <span className="num">{brl(pending.toReceive)}</span>
           </button>
         </div>
         <span className="muted" style={{ fontSize: 12 }}>Valores que ainda faltam neste mês. Toque numa conta para editar ou excluir.</span>

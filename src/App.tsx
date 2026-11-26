@@ -4,7 +4,8 @@ import { isConfigured, supabase } from './lib/supabase';
 import { StoreProvider, useStore } from './lib/store';
 import { isDemo } from './lib/demo';
 import { backgrounds, useAppearance, type Appearance } from './lib/appearance';
-import { Backdrop, Icon, InstallHint, MemoryMark, useGlassLight, useLiquidNav, type IconName } from './components/ui';
+import { Backdrop, Icon, InstallHint, MemoryMark, Sheet, useGlassLight, useLiquidNav, type IconName } from './components/ui';
+import { QuickAdd } from './components/QuickAdd';
 import { Login } from './pages/Login';
 import { Overview } from './pages/Overview';
 
@@ -45,6 +46,13 @@ const routes: { id: Route; label: string; short: string; icon: IconName; group: 
   { id: 'import', label: 'Importar extrato', short: 'Importar', icon: 'upload', group: 'Dia a dia', hidden: true },
 ];
 const visible = routes.filter((r) => !r.hidden);
+
+// Apple's guidance caps a tab bar at five items, so budgets and goals share one tab on the phone.
+const tabs = [
+  ...visible.filter((r) => r.group !== 'Planejar'),
+  { id: 'budgets' as Route, short: 'Planos', icon: 'target' as IconName },
+];
+const tabFor = (route: Route): Route => (route === 'goals' ? 'budgets' : route);
 
 function readRoute(): Route {
   const hash = window.location.hash.replace('#/', '') as Route;
@@ -87,17 +95,40 @@ function AppearanceButtons({ look }: { look: Appearance }) {
 
 function TabBar({ route, go }: { route: Route; go: (r: Route) => void }) {
   const bar = useRef<HTMLElement>(null);
-  useLiquidNav(bar, route, (key) => go(key as Route), 'x');
+  useLiquidNav(bar, tabFor(route), (key) => go(key as Route), 'x');
   return (
     <nav ref={bar} className="glass tabbar" aria-label="Seções">
       <span className="nav-pill" aria-hidden="true" />
-      {visible.map((r) => (
-        <a key={r.id} data-key={r.id} className="tab" href={`#/${r.id}`} aria-current={route === r.id ? 'page' : undefined}>
+      {tabs.map((r) => (
+        <a key={r.id} data-key={r.id} className="tab" href={`#/${r.id}`} aria-current={tabFor(route) === r.id ? 'page' : undefined}>
           <Icon name={r.icon} size={20} />
           <span>{r.short}</span>
         </a>
       ))}
     </nav>
+  );
+}
+
+function PlanSwitch({ route, go }: { route: Route; go: (r: Route) => void }) {
+  return (
+    <div className="segmented wide plan-switch" role="group" aria-label="Planos">
+      <button type="button" aria-pressed={route === 'budgets'} onClick={() => go('budgets')}>Orçamento</button>
+      <button type="button" aria-pressed={route === 'goals'} onClick={() => go('goals')}>Metas</button>
+    </div>
+  );
+}
+
+function LaunchButton() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" className="fab" aria-label="Lançar entrada ou saída" onClick={() => setOpen(true)}>
+        <Icon name="plus" size={24} strokeWidth={2.2} />
+      </button>
+      <Sheet open={open} onClose={() => setOpen(false)} title="Lançar">
+        <QuickAdd onDone={() => setOpen(false)} />
+      </Sheet>
+    </>
   );
 }
 
@@ -156,6 +187,7 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
           <div className="glass panel"><span className="muted">Carregando…</span></div>
         ) : (
           <div key={route} className="page">
+            {(route === 'budgets' || route === 'goals') && <PlanSwitch route={route} go={go} />}
             <Suspense fallback={null}>
               {route === 'overview' && <Overview go={go} />}
               {route === 'transactions' && <Transactions />}
@@ -171,6 +203,7 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
       </div>
 
       <TabBar route={route} go={go} />
+      {route !== 'import' && <LaunchButton />}
       <InstallHint />
 
       {error && (
