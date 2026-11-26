@@ -96,7 +96,7 @@ function BillRow({ bill }: { bill: Bill }) {
   }
 
   return (
-    <li className="list-row">
+    <li className="list-row bill-row">
       <div className="glass-2 date-badge">
         <span className="num" style={{ fontSize: 14, fontWeight: 600, lineHeight: 1 }}>{status.next.slice(8, 10)}</span>
         <span className="mono" style={{ fontSize: 9 }}>{shortMonth(status.next.slice(0, 7))}</span>
@@ -109,21 +109,23 @@ function BillRow({ bill }: { bill: Bill }) {
         </span>
       </div>
       <span className="amount out">{brl(bill.amount)}</span>
-      {!status.paid && (
-        <button type="button" className="pill" onClick={() => void pay()} title="Registra a saída e marca como paga">
-          <Icon name="check" size={14} />Paguei
+      <div className="bill-actions">
+        {!status.paid && (
+          <button type="button" className="pill" onClick={() => void pay()} title="Registra a saída e marca como paga">
+            <Icon name="check" size={14} />Paguei
+          </button>
+        )}
+        <button
+          type="button"
+          className="icon-btn danger"
+          aria-label={`Excluir conta ${bill.name}`}
+          onClick={() => {
+            if (confirm(`Excluir a conta "${bill.name}"?`)) void remove('bills', bill.id);
+          }}
+        >
+          <Icon name="trash" size={15} />
         </button>
-      )}
-      <button
-        type="button"
-        className="icon-btn danger"
-        aria-label={`Excluir conta ${bill.name}`}
-        onClick={() => {
-          if (confirm(`Excluir a conta "${bill.name}"?`)) void remove('bills', bill.id);
-        }}
-      >
-        <Icon name="trash" size={15} />
-      </button>
+      </div>
     </li>
   );
 }

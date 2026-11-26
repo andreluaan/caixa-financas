@@ -665,3 +665,12 @@ table.preview td select { min-height: 36px; font-size: 13px; }
 @keyframes tabbar-in {
   from { opacity: 0; transform: translateY(30px) scale(0.92); }
 }
+
+.bill-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+@media (max-width: 560px) {
+  .bill-row { flex-wrap: wrap; row-gap: 8px; }
+  .bill-row .body { flex: 1 1 0; }
+  .bill-row .title { white-space: normal; }
+  .bill-actions { flex: 1 1 100%; justify-content: flex-end; padding-left: 52px; }
+}

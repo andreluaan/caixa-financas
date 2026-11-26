@@ -200,14 +200,11 @@ export function useSlidingPill(container: RefObject<HTMLElement | null>, activeK
     const place = (animate: boolean) => {
       const active = box.querySelector<HTMLElement>('[aria-current="page"]');
       if (!active || !active.offsetParent) return;
-      const b = box.getBoundingClientRect();
-      const a = active.getBoundingClientRect();
-      const next = {
-        x: a.left - b.left - box.clientLeft + box.scrollLeft,
-        y: a.top - b.top - box.clientTop + box.scrollTop,
-        w: a.width,
-        h: a.height,
-      };
+      const next = { x: 0, y: 0, w: active.offsetWidth, h: active.offsetHeight };
+      for (let el: HTMLElement | null = active; el && el !== box; el = el.offsetParent as HTMLElement | null) {
+        next.x += el.offsetLeft;
+        next.y += el.offsetTop;
+      }
       const from = last.current;
       last.current = next;
       Object.assign(pill.style, frame(next), { opacity: '1' });
