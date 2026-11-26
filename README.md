@@ -29,8 +29,11 @@ Abre com dados de exemplo em memória. Nada é salvo; recarregar a página volta
 1. Crie uma conta em <https://supabase.com> e um projeto novo (plano Free). Região sugerida: São Paulo (`sa-east-1`).
 2. No projeto, abra **SQL Editor → New query**, cole todo o conteúdo de `supabase/migrations/0001_init.sql` e clique **Run**.
    Isso cria as tabelas, liga o RLS (cada usuário só vê os próprios dados) e cria as categorias iniciais para cada conta nova.
-   Depois, numa nova query, rode também `supabase/migrations/0002_recorrentes_e_parcelas.sql` (contas a receber, contas únicas e parcelas).
-3. Em **Project Settings → API**, copie a *Project URL* e a chave *anon public*.
+   Depois rode também, na ordem, `0002_recorrentes_e_parcelas.sql` (contas a receber, contas únicas e parcelas)
+   e `0003_permissoes_api.sql` (libera as tabelas para usuários logados; projetos novos do Supabase não fazem isso sozinhos).
+   Se o editor avisar que as tabelas estão sem RLS, escolha **Run and enable RLS**.
+3. Em **Project Settings → API Keys**, copie a *Project URL* e a *publishable key* (`sb_publishable_…`; em projetos antigos, a chave *anon public*).
+   Em **Authentication → URL Configuration**, troque o *Site URL* para `http://localhost:5173` (é para onde o e-mail de confirmação leva).
 4. Copie `.env.example` para `.env` e preencha:
    ```
    VITE_SUPABASE_URL=...
@@ -73,6 +76,7 @@ Qualquer hospedagem de site estático serve. Exemplo com a Vercel (grátis):
 ```
 supabase/migrations/0001_init.sql   esquema, RLS e categorias iniciais
 supabase/migrations/0002_*.sql      contas a pagar/receber, únicas e parcelas
+supabase/migrations/0003_*.sql      acesso da API às tabelas para usuários logados
 src/lib/store.tsx                   dados (Supabase ou demo) e ações
 src/lib/calc.ts                     totais, orçamentos, fatura, contas a pagar
 src/lib/import.ts                   leitura de OFX/CSV e sugestão de categoria
