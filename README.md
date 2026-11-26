@@ -54,7 +54,8 @@ Qualquer hospedagem de site estático serve. Exemplo com a Vercel (grátis):
 1. Suba esta pasta para um repositório no GitHub.
 2. Na Vercel, **Add New → Project**, escolha o repositório. Framework: Vite.
 3. Em **Environment Variables**, adicione `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
-4. Depois do deploy, no Supabase em **Authentication → URL Configuration**, coloque o endereço da Vercel em *Site URL*.
+4. Depois do deploy, no Supabase em **Authentication → URL Configuration**, coloque o endereço da Vercel em *Site URL*
+   e adicione `http://localhost:5173/**` em *Redirect URLs* (para o cadastro também funcionar no PC).
 5. No celular, abra o endereço e use **Adicionar à tela inicial** para instalar como app.
 
 ## Plano grátis do Supabase: o que saber
