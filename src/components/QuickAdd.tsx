@@ -60,7 +60,7 @@ export function QuickAdd() {
   }
 
   return (
-    <form className="glass-2" onSubmit={submit} style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12, borderRadius: 18, background: 'rgba(0,0,0,0.22)' }}>
+    <form className="glass-2" onSubmit={submit} style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12, borderRadius: 18, background: 'var(--field)' }}>
       <div className="row">
         <Field label="Descrição" className="grow">
           <input className="field" type="text" placeholder="Ex.: Mercado da semana" maxLength={140} value={description} onChange={(e) => changeDescription(e.target.value)} />

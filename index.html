@@ -11,6 +11,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@300;400;500;700&text=.&display=swap" rel="stylesheet" />
     <title>Caixa — finanças pessoais</title>
+    <script>
+      document.documentElement.dataset.theme =
+        localStorage.getItem('caixa.theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    </script>
   </head>
   <body>
     <div id="root"></div>

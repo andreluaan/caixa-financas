@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { isConfigured, supabase } from './lib/supabase';
 import { StoreProvider, useStore } from './lib/store';
 import { isDemo } from './lib/demo';
+import { backgrounds, useAppearance, type Appearance } from './lib/appearance';
 import { Backdrop, Icon, MemoryMark, type IconName } from './components/ui';
 import { Login } from './pages/Login';
 import { Overview } from './pages/Overview';
@@ -42,7 +43,27 @@ function useRoute() {
   return [route, go] as const;
 }
 
-function Shell({ session }: { session: Session }) {
+function AppearanceButtons({ look }: { look: Appearance }) {
+  const nextBg = backgrounds[(backgrounds.findIndex((b) => b.id === look.background) + 1) % backgrounds.length];
+  return (
+    <>
+      <button
+        type="button"
+        className="icon-btn"
+        aria-label={look.theme === 'dark' ? 'Usar tema claro' : 'Usar tema escuro'}
+        title={look.theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+        onClick={look.toggleTheme}
+      >
+        <Icon name={look.theme === 'dark' ? 'sun' : 'moon'} size={16} />
+      </button>
+      <button type="button" className="icon-btn" aria-label={`Trocar fundo para ${nextBg.label}`} title={`Fundo: ${nextBg.label}`} onClick={look.nextBackground}>
+        <Icon name="layers" size={16} />
+      </button>
+    </>
+  );
+}
+
+function Shell({ session, look }: { session: Session; look: Appearance }) {
   const [route, go] = useRoute();
   const { loading, error, clearError } = useStore();
   const groups = [...new Set(routes.map((r) => r.group))];
@@ -71,10 +92,11 @@ function Shell({ session }: { session: Session }) {
           ))}
         </nav>
         <div className="user-row">
-          <div className="avatar" style={{ background: 'var(--ink)', width: 32, height: 32, fontSize: 12 }} aria-hidden="true">
+          <div className="avatar" style={{ background: 'var(--ink)', color: 'var(--on-ink)', width: 32, height: 32, fontSize: 12 }} aria-hidden="true">
             {(session.user.email ?? '?').charAt(0).toUpperCase()}
           </div>
           <span className="muted" style={{ fontSize: 12, flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{session.user.email}</span>
+          <AppearanceButtons look={look} />
           <button type="button" className="icon-btn" aria-label="Sair" disabled={isDemo} onClick={() => void supabase.auth.signOut()}>
             <Icon name="logout" size={16} />
           </button>
@@ -128,6 +150,7 @@ const demoSession = { user: { id: 'demo', email: 'demo@caixa.local' } } as Sessi
 export function App() {
   const [session, setSession] = useState<Session | null>(isDemo ? demoSession : null);
   const [ready, setReady] = useState(isDemo);
+  const look = useAppearance();
 
   useEffect(() => {
     if (isDemo || !isConfigured) return;
@@ -141,15 +164,20 @@ export function App() {
 
   return (
     <>
-      <Backdrop />
+      <Backdrop variant={look.background} />
       {!isConfigured && !isDemo ? (
         <NotConfigured />
       ) : !ready ? null : session ? (
         <StoreProvider key={session.user.id}>
-          <Shell session={session} />
+          <Shell session={session} look={look} />
         </StoreProvider>
       ) : (
         <Login />
+      )}
+      {(!session || !isConfigured) && !isDemo && (
+        <div className="glass appearance-float">
+          <AppearanceButtons look={look} />
+        </div>
       )}
     </>
   );
