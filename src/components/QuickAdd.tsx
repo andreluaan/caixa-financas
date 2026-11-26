@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useStore } from '../lib/store';
-import { brl, parseMoney, today } from '../lib/format';
+import { brl, parseMoney, shortDate, today } from '../lib/format';
 import { suggestCategory } from '../lib/import';
 import type { Kind } from '../lib/types';
 import { Field, Icon } from './ui';
 
-export function QuickAdd() {
+export function QuickAdd({ onDone }: { onDone?: () => void } = {}) {
   const { categories, accounts, insert } = useStore();
   const [kind, setKind] = useState<Kind>('out');
   const [description, setDescription] = useState('');
@@ -13,7 +13,7 @@ export function QuickAdd() {
   const [categoryId, setCategoryId] = useState('');
   const [accountId, setAccountId] = useState('');
   const [date, setDate] = useState(today());
-  const [hint, setHint] = useState('Escolha se é saída ou entrada e lance.');
+  const [hint, setHint] = useState('');
   const [busy, setBusy] = useState(false);
   const [touchedCategory, setTouchedCategory] = useState(false);
 
@@ -56,11 +56,16 @@ export function QuickAdd() {
       setDescription('');
       setAmount('');
       setTouchedCategory(false);
+      onDone?.();
     }
   }
 
+  const categoryName = options.find((c) => c.id === categoryId)?.name ?? 'Sem categoria';
+  const accountName = accounts.find((a) => a.id === accountId)?.name ?? 'sem conta';
+  const dateLabel = date === today() ? 'hoje' : shortDate(date);
+
   return (
-    <form className="glass-2" onSubmit={submit} style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12, borderRadius: 18, background: 'var(--field)' }}>
+    <form className="glass-2 quick-add" onSubmit={submit}>
       <div className="row">
         <Field label="Descrição" className="grow">
           <input className="field" type="text" placeholder="Ex.: Mercado da semana" maxLength={140} value={description} onChange={(e) => changeDescription(e.target.value)} />
@@ -68,36 +73,45 @@ export function QuickAdd() {
         <Field label="Valor · R$">
           <input className="field num" type="text" inputMode="decimal" placeholder="0,00" value={amount} onChange={(e) => setAmount(e.target.value)} />
         </Field>
-        <Field label="Data">
-          <input className="field" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-        </Field>
       </div>
-      <div className="row">
-        <Field label="Categoria">
-          <select
-            className="field"
-            value={categoryId}
-            onChange={(e) => {
-              setCategoryId(e.target.value);
-              setTouchedCategory(true);
-            }}
-          >
-            {options.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Conta">
-          <select className="field" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
-            ))}
-          </select>
-        </Field>
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-        <button type="button" className="pill toggle" aria-pressed={kind === 'out'} onClick={() => setKind('out')}>Saída</button>
-        <button type="button" className="pill toggle" aria-pressed={kind === 'in'} onClick={() => setKind('in')}>Entrada</button>
+      <details className="more">
+        <summary>
+          {categoryName} · {dateLabel} · {accountName}
+        </summary>
+        <div className="stack">
+          <div className="row">
+            <Field label="Categoria">
+              <select
+                className="field"
+                value={categoryId}
+                onChange={(e) => {
+                  setCategoryId(e.target.value);
+                  setTouchedCategory(true);
+                }}
+              >
+                {options.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Data">
+              <input className="field" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+            </Field>
+            <Field label="Conta">
+              <select className="field" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </div>
+      </details>
+      <div className="quick-actions">
+        <div className="segmented" role="group" aria-label="Tipo">
+          <button type="button" aria-pressed={kind === 'out'} onClick={() => setKind('out')}>Saída</button>
+          <button type="button" aria-pressed={kind === 'in'} onClick={() => setKind('in')}>Entrada</button>
+        </div>
         <span className="muted" role="status" style={{ fontSize: 12, flexGrow: 1 }}>{hint}</span>
         <button type="submit" className="btn-primary" disabled={busy}>
           <Icon name="plus" size={14} strokeWidth={2.2} />

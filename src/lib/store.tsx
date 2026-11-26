@@ -33,6 +33,7 @@ interface Store extends Data {
   error: string | null;
   reload: () => Promise<void>;
   insert: <T extends Table>(table: T, values: Record<string, unknown> | Record<string, unknown>[]) => Promise<boolean>;
+  insertOne: (table: Table, values: Record<string, unknown>) => Promise<string | null>;
   update: (table: Table, id: string, values: Record<string, unknown>) => Promise<boolean>;
   remove: (table: Table, id: string) => Promise<boolean>;
   addTransactions: (rows: NewTransaction[]) => Promise<{ inserted: number; skipped: number } | null>;
@@ -98,6 +99,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       reload,
       clearError: () => setError(null),
       insert: (table, values) => run(supabase.from(table).insert(values)),
+      insertOne: async (table, values) => {
+        const { data: row, error: err } = await supabase.from(table).insert(values).select('id').single();
+        if (err) {
+          setError(err.message);
+          return null;
+        }
+        await reload();
+        return (row as { id: string }).id;
+      },
       update: (table, id, values) => run(supabase.from(table).update(values).eq('id', id)),
       remove: (table, id) => run(supabase.from(table).delete().eq('id', id)),
       addTransactions: async (rows) => {
@@ -142,6 +152,11 @@ function demoStore(
       const list = (Array.isArray(values) ? values : [values]).map((v) => ({ id: newId(), import_key: null, ...v }));
       patch(table, [...(data[table] as unknown[]), ...list]);
       return true;
+    },
+    insertOne: async (table, values) => {
+      const id = newId();
+      setData((d) => ({ ...d, [table]: [...(d[table] as unknown[]), { id, ...values }] }));
+      return id;
     },
     update: async (table, id, values) => {
       patch(table, (data[table] as { id: string }[]).map((r) => (r.id === id ? { ...r, ...values } : r)));

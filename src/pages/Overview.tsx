@@ -1,31 +1,28 @@
-import { useState } from 'react';
 import { useStore } from '../lib/store';
 import { billStatus, budgetUsage, invoiceTotal, monthTotals, spendingByMonth } from '../lib/calc';
 import { brl, currentMonth, longMonth, shortDate, shortMonth } from '../lib/format';
 import { QuickAdd } from '../components/QuickAdd';
 import { TransactionList } from '../components/TransactionList';
 import { Money, Panel, Progress } from '../components/ui';
-import type { Kind } from '../lib/types';
 import type { Route } from '../App';
 
 export function Overview({ go }: { go: (r: Route) => void }) {
-  const { transactions, budgets, categories, goals, bills, accounts } = useStore();
-  const [filter, setFilter] = useState<Kind | 'all'>('all');
+  const { transactions, budgets, categories, bills, accounts } = useStore();
   const month = currentMonth();
   const totals = monthTotals(transactions, month);
   const savedPct = totals.income ? Math.round((totals.balance / totals.income) * 100) : 0;
   const history = spendingByMonth(transactions);
   const max = Math.max(1, ...history.map((h) => h.total));
-  const usage = budgetUsage(budgets, categories, transactions, month).slice(0, 4);
+  const attention = budgetUsage(budgets, categories, transactions, month).filter((u) => u.pct >= 80).slice(0, 3);
   const upcoming = bills
     .filter((b) => b.active)
     .map((b) => ({ bill: b, status: billStatus(b) }))
     .filter((x) => !x.status.paid)
     .sort((a, b) => a.status.daysLeft - b.status.daysLeft)
-    .slice(0, 4);
+    .slice(0, 3);
   const card = accounts.find((a) => a.kind === 'credit');
   const invoice = card ? invoiceTotal(card, transactions) : null;
-  const recent = transactions.filter((t) => filter === 'all' || t.kind === filter).slice(0, 8);
+  const recent = transactions.slice(0, 6);
 
   return (
     <div className="columns">
@@ -66,48 +63,25 @@ export function Overview({ go }: { go: (r: Route) => void }) {
           </div>
         </section>
 
-        <Panel
-          title="Transações recentes"
-          action={
-            <div className="chips" role="group" aria-label="Filtrar transações">
-              {([['all', 'Todas'], ['in', 'Entradas'], ['out', 'Saídas']] as const).map(([id, label]) => (
-                <button key={id} type="button" className="pill" aria-pressed={filter === id} onClick={() => setFilter(id)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          }
-        >
-          <TransactionList items={recent} empty="Nenhuma transação ainda. Lance a primeira acima ou importe um extrato." />
-          {transactions.length > 8 && (
-            <button type="button" className="pill" style={{ alignSelf: 'flex-start' }} onClick={() => go('transactions')}>
-              Ver todas
-            </button>
-          )}
+        <Panel title="Últimos lançamentos" action={<button type="button" className="pill" onClick={() => go('transactions')}>Ver todos</button>}>
+          <TransactionList items={recent} empty="Nada lançado ainda. Comece pelo campo acima ou importe um extrato." />
         </Panel>
 
-        <Panel title={`Orçamentos de ${longMonth(month)}`} action={<button type="button" className="pill" onClick={() => go('budgets')}>Ajustar</button>}>
-          {usage.length === 0 ? (
-            <p className="empty">Defina limites por categoria em Orçamentos.</p>
-          ) : (
-            <div className="grid-cards">
-              {usage.map((u) => (
-                <div key={u.budget.id} className="glass-2 card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                    <span style={{ fontSize: 14 }}>{u.name}</span>
-                    <span className="mono" style={{ color: u.over ? 'var(--shu)' : undefined }}>
-                      {Math.round(u.pct)}%{u.over ? ' · passou' : ''}
-                    </span>
-                  </div>
-                  <Progress value={u.pct} over={u.over} label={`Orçamento de ${u.name}`} />
-                  <span className="muted num" style={{ fontSize: 12 }}>
+        {attention.length > 0 && (
+          <Panel title="Perto do limite" action={<button type="button" className="pill" onClick={() => go('budgets')}>Orçamentos</button>}>
+            {attention.map((u) => (
+              <div key={u.budget.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, fontSize: 13 }}>
+                  <span>{u.name}</span>
+                  <span className="muted num">
                     {brl(u.used)} de {brl(u.budget.monthly_limit)}
                   </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </Panel>
+                <Progress value={u.pct} over={u.over} label={`Orçamento de ${u.name}`} />
+              </div>
+            ))}
+          </Panel>
+        )}
       </div>
 
       <aside className="rail">
@@ -126,27 +100,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
           </div>
         </Panel>
 
-        <Panel title="Metas" action={<button type="button" className="pill" onClick={() => go('goals')}>Ver todas</button>}>
-          {goals.length === 0 ? (
-            <p className="empty">Nenhuma meta criada.</p>
-          ) : (
-            goals.slice(0, 3).map((g) => {
-              const pct = (g.saved / g.target) * 100;
-              return (
-                <div key={g.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                    <span>{g.name}</span>
-                    <span className="muted num">{Math.round(pct)}%</span>
-                  </div>
-                  <Progress value={pct} label={`Meta ${g.name}`} />
-                  <span className="muted num" style={{ fontSize: 12 }}>{brl(g.saved)} de {brl(g.target)}</span>
-                </div>
-              );
-            })
-          )}
-        </Panel>
-
-        <Panel title="Próximas contas" action={<button type="button" className="pill" onClick={() => go('accounts')}>Gerenciar</button>}>
+        <Panel title="Próximas contas" action={<button type="button" className="pill" onClick={() => go('accounts')}>Ver todas</button>}>
           {upcoming.length === 0 ? (
             <p className="empty">Nada pendente este mês.</p>
           ) : (

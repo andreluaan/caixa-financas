@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, type ReactNode, type RefObject, type SVGProps } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject, type SVGProps } from 'react';
+import { createPortal } from 'react-dom';
 import { brl } from '../lib/format';
 import type { Background } from '../lib/appearance';
 
@@ -17,6 +18,9 @@ const paths = {
   close: <path d="M6 6l12 12M18 6L6 18" />,
   sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
   moon: <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />,
+  bank: <><path d="M3 10l9-6 9 6" /><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" /></>,
+  wallet: <><path d="M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11" /><path d="M16 13.5h.01" /></>,
+  piggy: <><path d="M5 11a7 6 0 0 1 12.5-3.5L20 7v4l1 1v3h-2.5L17 17v2h-3v-1.5h-4V19H7v-2.5A6 6 0 0 1 5 11z" /><path d="M14 9.5h.01" /></>,
   layers: <><path d="M12 3l9 5-9 5-9-5 9-5z" /><path d="M3 13l9 5 9-5" /></>,
 };
 
@@ -401,4 +405,67 @@ export function useLiquidNav(
       box.removeEventListener('click', click);
     };
   }, [container, axis]);
+}
+
+export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const [round, setRound] = useState(0);
+  const wasOpen = useRef(false);
+
+  useEffect(() => {
+    if (open && !wasOpen.current) setRound((n) => n + 1);
+    wasOpen.current = open;
+  }, [open]);
+
+  useEffect(() => {
+    const d = dialog.current;
+    if (!d) return;
+    if (open && !d.open) {
+      d.classList.remove('closing');
+      d.showModal();
+    }
+    if (!open && d.open) {
+      if (reducedMotion()) return d.close();
+      d.classList.add('closing');
+      const done = () => d.close();
+      d.addEventListener('animationend', done, { once: true });
+      return () => d.removeEventListener('animationend', done);
+    }
+  }, [open]);
+
+  return createPortal(
+    <dialog
+      ref={dialog}
+      className="sheet"
+      aria-labelledby={titleId}
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
+      onClose={() => open && onClose()}
+      onClick={(e) => {
+        if (e.target === dialog.current) onClose();
+      }}
+    >
+      <div className="sheet-grip" aria-hidden="true" />
+      <div className="sheet-head">
+        <h2 id={titleId}>{title}</h2>
+        <button type="button" className="icon-btn" aria-label="Fechar" onClick={onClose}>
+          <Icon name="close" size={16} />
+        </button>
+      </div>
+      <div key={round} className="sheet-body">{children}</div>
+    </dialog>,
+    document.body,
+  );
+}
+
+export function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" className="pill add" onClick={onClick}>
+      <Icon name="plus" size={14} strokeWidth={2.2} />
+      {label}
+    </button>
+  );
 }

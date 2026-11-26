@@ -1,83 +1,10 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { useStore } from '../lib/store';
 import { accountBalance, billStatus, invoiceTotal } from '../lib/calc';
-import { brl, parseMoney, shortDate, shortMonth, today } from '../lib/format';
-import { Field, Icon, Money, Panel, Progress } from '../components/ui';
+import { brl, shortDate, shortMonth, today } from '../lib/format';
+import { AddButton, Icon, Money, Panel, Progress, Sheet } from '../components/ui';
+import { kindLabel, NewAccountForm, NewBillForm } from '../components/forms';
 import type { AccountKind, Bill } from '../lib/types';
-
-const kindLabel: Record<AccountKind, string> = {
-  checking: 'Conta corrente',
-  savings: 'Poupança',
-  cash: 'Dinheiro',
-  credit: 'Cartão de crédito',
-};
-
-function NewAccount() {
-  const { insert } = useStore();
-  const [name, setName] = useState('');
-  const [kind, setKind] = useState<AccountKind>('checking');
-  const [limit, setLimit] = useState('');
-  const [opening, setOpening] = useState('');
-  const [closing, setClosing] = useState('');
-  const [due, setDue] = useState('');
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) return;
-    const credit = kind === 'credit';
-    const ok = await insert('accounts', {
-      name: name.trim(),
-      kind,
-      opening_balance: !credit && opening ? parseMoney(opening) || 0 : 0,
-      credit_limit: credit && limit ? parseMoney(limit) : null,
-      closing_day: credit && closing ? Number(closing) : null,
-      due_day: credit && due ? Number(due) : null,
-    });
-    if (ok) {
-      setName('');
-      setLimit('');
-      setOpening('');
-      setClosing('');
-      setDue('');
-    }
-  }
-
-  return (
-    <Panel title="Nova conta ou cartão">
-      <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <Field label="Nome">
-          <input className="field" maxLength={60} placeholder="Nubank, Itaú, Carteira…" value={name} onChange={(e) => setName(e.target.value)} />
-        </Field>
-        <Field label="Tipo">
-          <select className="field" value={kind} onChange={(e) => setKind(e.target.value as AccountKind)}>
-            {Object.entries(kindLabel).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-        </Field>
-        {kind !== 'credit' && (
-          <Field label="Saldo atual · R$">
-            <input className="field num" inputMode="decimal" placeholder="0,00" value={opening} onChange={(e) => setOpening(e.target.value)} />
-          </Field>
-        )}
-        {kind === 'credit' && (
-          <div className="row">
-            <Field label="Limite · R$">
-              <input className="field num" inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} />
-            </Field>
-            <Field label="Fecha dia">
-              <input className="field num" type="number" min={1} max={31} required value={closing} onChange={(e) => setClosing(e.target.value)} />
-            </Field>
-            <Field label="Vence dia">
-              <input className="field num" type="number" min={1} max={31} required value={due} onChange={(e) => setDue(e.target.value)} />
-            </Field>
-          </div>
-        )}
-        <button className="btn-primary" type="submit"><Icon name="plus" size={14} />Adicionar</button>
-      </form>
-    </Panel>
-  );
-}
 
 function BillRow({ bill }: { bill: Bill }) {
   const { insert, update, remove } = useStore();
@@ -130,80 +57,24 @@ function BillRow({ bill }: { bill: Bill }) {
   );
 }
 
-function NewBill() {
-  const { insert, categories, accounts } = useStore();
-  const out = categories.filter((c) => c.kind === 'out');
-  const [name, setName] = useState('');
-  const [amount, setAmount] = useState('');
-  const [dueDay, setDueDay] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [accountId, setAccountId] = useState('');
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    const value = parseMoney(amount);
-    if (!name.trim() || !(value > 0) || !dueDay) return;
-    const ok = await insert('bills', {
-      name: name.trim(),
-      amount: value,
-      due_day: Number(dueDay),
-      category_id: categoryId || null,
-      account_id: accountId || accounts[0]?.id || null,
-    });
-    if (ok) {
-      setName('');
-      setAmount('');
-      setDueDay('');
-    }
-  }
-
-  return (
-    <form onSubmit={submit} className="glass-2" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div className="row">
-        <Field label="Conta a pagar" className="grow">
-          <input className="field" maxLength={60} placeholder="Internet, energia, aluguel…" value={name} onChange={(e) => setName(e.target.value)} />
-        </Field>
-        <Field label="Valor · R$">
-          <input className="field num" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        </Field>
-        <Field label="Dia do vencimento">
-          <input className="field num" type="number" min={1} max={31} value={dueDay} onChange={(e) => setDueDay(e.target.value)} />
-        </Field>
-      </div>
-      <div className="row">
-        <Field label="Categoria">
-          <select className="field" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            <option value="">Sem categoria</option>
-            {out.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Paga com">
-          <select className="field" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
-            ))}
-          </select>
-        </Field>
-        <button className="btn-primary shrink" type="submit"><Icon name="plus" size={14} />Adicionar</button>
-      </div>
-    </form>
-  );
-}
-
 export function Accounts() {
   const { accounts, transactions, bills, remove } = useStore();
   const cards = accounts.filter((a) => a.kind === 'credit');
   const banks = accounts.filter((a) => a.kind !== 'credit');
+  const [sheet, setSheet] = useState<null | 'bill' | 'account'>(null);
+  const [kind, setKind] = useState<AccountKind>('checking');
+  const close = () => setSheet(null);
+  const newAccount = (k: AccountKind) => {
+    setKind(k);
+    setSheet('account');
+  };
 
   return (
     <div className="columns">
       <div className="main">
-        <Panel title="Contas a pagar" action={<span className="mono">mensais</span>}>
-          <NewBill />
+        <Panel title="Contas a pagar" action={<AddButton label="Nova" onClick={() => setSheet('bill')} />}>
           {bills.length === 0 ? (
-            <p className="empty">Cadastre as contas fixas do mês para receber o lembrete aqui e na visão geral.</p>
+            <p className="empty">Cadastre as contas fixas do mês para ser lembrado delas.</p>
           ) : (
             <ul className="list" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {bills.map((b) => (
@@ -213,7 +84,7 @@ export function Accounts() {
           )}
         </Panel>
 
-        <Panel title="Cartões">
+        <Panel title="Cartões" action={<AddButton label="Novo" onClick={() => newAccount('credit')} />}>
           {cards.length === 0 && <p className="empty">Nenhum cartão cadastrado.</p>}
           <div className="grid-cards">
             {cards.map((card) => {
@@ -236,16 +107,14 @@ export function Accounts() {
                       </button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <span className="muted" style={{ fontSize: 12 }}>
-                        Fatura {shortDate(invoice.start)} a {shortDate(invoice.end)} · vence {shortDate(invoice.due)}
-                      </span>
+                      <span className="muted" style={{ fontSize: 12 }}>Fatura atual · vence {shortDate(invoice.due)}</span>
                       <span className="num" style={{ fontSize: 24 }}><Money value={invoice.total} /></span>
                     </div>
                   </div>
                   {card.credit_limit ? (
                     <>
                       <Progress value={pct} over={pct > 100} label={`Uso do limite de ${card.name}`} />
-                      <span className="muted" style={{ fontSize: 12 }}>{Math.round(pct)}% do limite de {brl(card.credit_limit)}</span>
+                      <span className="muted" style={{ fontSize: 12 }}>{Math.round(pct)}% de {brl(card.credit_limit)}</span>
                     </>
                   ) : null}
                 </div>
@@ -256,7 +125,8 @@ export function Accounts() {
       </div>
 
       <aside className="rail">
-        <Panel title="Contas">
+        <Panel title="Contas" action={<AddButton label="Nova" onClick={() => newAccount('checking')} />}>
+          {banks.length === 0 && <p className="empty">Nenhuma conta cadastrada.</p>}
           <ul className="list" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {banks.map((a) => (
               <li key={a.id} className="list-row">
@@ -278,10 +148,15 @@ export function Accounts() {
               </li>
             ))}
           </ul>
-          <span className="muted" style={{ fontSize: 12 }}>Saldo = saldo informado ao criar a conta + tudo o que foi lançado nela.</span>
         </Panel>
-        <NewAccount />
       </aside>
+
+      <Sheet open={sheet === 'bill'} onClose={close} title="Nova conta a pagar">
+        <NewBillForm onDone={close} />
+      </Sheet>
+      <Sheet open={sheet === 'account'} onClose={close} title="Nova conta ou cartão">
+        <NewAccountForm initialKind={kind} onDone={close} />
+      </Sheet>
     </div>
   );
 }
