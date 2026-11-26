@@ -38,7 +38,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <h1 className="hero-title">
-              Para onde vai
+              Para onde vai{' '}
               <br />
               seu dinheiro hoje<span className="dot">.</span>
             </h1>

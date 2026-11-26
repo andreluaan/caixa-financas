@@ -4,7 +4,7 @@ import { isConfigured, supabase } from './lib/supabase';
 import { StoreProvider, useStore } from './lib/store';
 import { isDemo } from './lib/demo';
 import { backgrounds, useAppearance, type Appearance } from './lib/appearance';
-import { Backdrop, Icon, MemoryMark, useGlassLight, useSlidingPill, type IconName } from './components/ui';
+import { Backdrop, Icon, MemoryMark, useGlassLight, useLiquidNav, type IconName } from './components/ui';
 import { Login } from './pages/Login';
 import { Overview } from './pages/Overview';
 import { Transactions } from './pages/Transactions';
@@ -63,14 +63,14 @@ function AppearanceButtons({ look }: { look: Appearance }) {
   );
 }
 
-function TabBar({ route }: { route: Route }) {
+function TabBar({ route, go }: { route: Route; go: (r: Route) => void }) {
   const bar = useRef<HTMLElement>(null);
-  useSlidingPill(bar, route);
+  useLiquidNav(bar, route, (key) => go(key as Route), 'x');
   return (
     <nav ref={bar} className="glass tabbar" aria-label="Seções">
       <span className="nav-pill" aria-hidden="true" />
       {routes.map((r) => (
-        <a key={r.id} className="tab" href={`#/${r.id}`} aria-current={route === r.id ? 'page' : undefined}>
+        <a key={r.id} data-key={r.id} className="tab" href={`#/${r.id}`} aria-current={route === r.id ? 'page' : undefined}>
           <Icon name={r.icon} size={20} />
           <span>{r.short}</span>
         </a>
@@ -86,7 +86,7 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
   const page = useRef<HTMLDivElement>(null);
   const nav = useRef<HTMLElement>(null);
   useGlassLight();
-  useSlidingPill(nav, route);
+  useLiquidNav(nav, route, (key) => go(key as Route), 'y');
 
   useLayoutEffect(() => {
     page.current?.querySelectorAll<HTMLElement>('.glass').forEach((el, i) => el.style.setProperty('--i', String(i)));
@@ -108,7 +108,7 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
             <div key={group} className="nav-group">
               <span className="mono nav-label">{group}</span>
               {routes.filter((r) => r.group === group).map((r) => (
-                <a key={r.id} className="nav-item" href={`#/${r.id}`} aria-current={route === r.id ? 'page' : undefined}>
+                <a key={r.id} data-key={r.id} className="nav-item" href={`#/${r.id}`} aria-current={route === r.id ? 'page' : undefined}>
                   <Icon name={r.icon} />
                   {r.label}
                 </a>
@@ -143,7 +143,7 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
         )}
       </div>
 
-      <TabBar route={route} />
+      <TabBar route={route} go={go} />
 
       {error && (
         <div className="glass toast error" role="alert">

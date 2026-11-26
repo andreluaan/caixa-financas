@@ -183,14 +183,36 @@ export function useGlassLight() {
 
 type Rect = { x: number; y: number; w: number; h: number };
 
-const frame = (r: Rect, squeeze = 1) => ({
-  transform: `translate(${r.x}px, ${r.y}px) scale(${squeeze}, ${2 - squeeze})`,
+const frame = (r: Rect, sx = 1, sy = 1) => ({
+  transform: `translate(${r.x}px, ${r.y}px) scale(${sx}, ${sy})`,
   width: `${r.w}px`,
   height: `${r.h}px`,
 });
 
-export function useSlidingPill(container: RefObject<HTMLElement | null>, activeKey: string) {
+function rectOf(el: HTMLElement, box: HTMLElement): Rect {
+  const r = { x: 0, y: 0, w: el.offsetWidth, h: el.offsetHeight };
+  for (let node: HTMLElement | null = el; node && node !== box; node = node.offsetParent as HTMLElement | null) {
+    r.x += node.offsetLeft;
+    r.y += node.offsetTop;
+  }
+  return r;
+}
+
+const same = (a: Rect, b: Rect) => a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
+
+/**
+ * Selection pill that slides between items and, while pressed, turns into a
+ * draggable glass lens that magnifies the item under it (iOS tab bar style).
+ */
+export function useLiquidNav(
+  container: RefObject<HTMLElement | null>,
+  activeKey: string,
+  onSelect: (key: string) => void,
+  axis: 'x' | 'y',
+) {
   const last = useRef<Rect | null>(null);
+  const select = useRef(onSelect);
+  select.current = onSelect;
 
   useLayoutEffect(() => {
     const box = container.current;
@@ -198,32 +220,24 @@ export function useSlidingPill(container: RefObject<HTMLElement | null>, activeK
     if (!box || !pill) return;
 
     const place = (animate: boolean) => {
+      if (box.classList.contains('pressing')) return;
       const active = box.querySelector<HTMLElement>('[aria-current="page"]');
       if (!active || !active.offsetParent) return;
-      const next = { x: 0, y: 0, w: active.offsetWidth, h: active.offsetHeight };
-      for (let el: HTMLElement | null = active; el && el !== box; el = el.offsetParent as HTMLElement | null) {
-        next.x += el.offsetLeft;
-        next.y += el.offsetTop;
-      }
+      const next = rectOf(active, box);
       const from = last.current;
       last.current = next;
       Object.assign(pill.style, frame(next), { opacity: '1' });
-      if (!animate || !from || reducedMotion()) return;
+      if (!animate || !from || same(from, next) || reducedMotion()) return;
 
       const x = Math.min(from.x, next.x);
       const y = Math.min(from.y, next.y);
-      const stretched = {
-        x,
-        y,
-        w: Math.max(from.x + from.w, next.x + next.w) - x,
-        h: Math.max(from.y + from.h, next.y + next.h) - y,
-      };
+      const stretched = { x, y, w: Math.max(from.x + from.w, next.x + next.w) - x, h: Math.max(from.y + from.h, next.y + next.h) - y };
       const horizontal = Math.abs(next.x - from.x) > Math.abs(next.y - from.y);
       pill.animate(
         [
           frame(from),
-          { ...frame(stretched, horizontal ? 1 : 0.94), offset: 0.42 },
-          { ...frame(next, horizontal ? 0.96 : 1.03), offset: 0.75 },
+          { ...frame(stretched, horizontal ? 1 : 0.94, horizontal ? 0.94 : 1.06), offset: 0.42 },
+          { ...frame(next, horizontal ? 0.96 : 1.03, horizontal ? 1.04 : 0.97), offset: 0.75 },
           frame(next),
         ],
         { duration: 560, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' },
@@ -235,4 +249,137 @@ export function useSlidingPill(container: RefObject<HTMLElement | null>, activeK
     observer.observe(box);
     return () => observer.disconnect();
   }, [container, activeKey]);
+
+  useEffect(() => {
+    const box = container.current;
+    const pill = box?.querySelector<HTMLElement>(':scope > .nav-pill');
+    if (!box || !pill) return;
+
+    const items = () => [...box.querySelectorAll<HTMLElement>('[data-key]')].filter((el) => el.offsetParent);
+    let pointer: number | null = null;
+    let base: Rect | null = null;
+    let lastPos = 0;
+    let lastTime = 0;
+    let stretch = 1;
+    let under: HTMLElement | null = null;
+    let current: { rect: Rect; sx: number; sy: number } | null = null;
+    let handled = false;
+
+    const lensAt = (pos: number) => {
+      if (!base) return;
+      const b = box.getBoundingClientRect();
+      const local = axis === 'x' ? pos - b.left - box.clientLeft : pos - b.top - box.clientTop;
+      const grow = axis === 'x' ? { w: base.w * 1.08, h: base.h * 1.34 } : { w: base.w * 1.02, h: base.h * 1.4 };
+      const span = axis === 'x' ? box.clientWidth : box.clientHeight;
+      const size = axis === 'x' ? grow.w : grow.h;
+      const center = Math.max(size / 2 - 6, Math.min(span - size / 2 + 6, local));
+      const lens: Rect =
+        axis === 'x'
+          ? { x: center - grow.w / 2, y: base.y - (grow.h - base.h) / 2, w: grow.w, h: grow.h }
+          : { x: base.x - (grow.w - base.w) / 2, y: center - grow.h / 2, w: grow.w, h: grow.h };
+
+      const now = performance.now();
+      const velocity = Math.abs(pos - lastPos) / Math.max(1, now - lastTime);
+      stretch += (1 + Math.min(velocity * 0.22, 0.32) - stretch) * 0.35;
+      lastPos = pos;
+      lastTime = now;
+      const squash = 1 / Math.sqrt(stretch);
+      current = axis === 'x' ? { rect: lens, sx: stretch, sy: squash } : { rect: lens, sx: squash, sy: stretch };
+      Object.assign(pill.style, frame(current.rect, current.sx, current.sy));
+
+      const nearest = closest(center);
+      if (nearest !== under) {
+        under?.classList.remove('under-lens');
+        nearest?.classList.add('under-lens');
+        under = nearest;
+      }
+    };
+
+    const closest = (center: number) => {
+      let best: HTMLElement | null = null;
+      let distance = Infinity;
+      for (const el of items()) {
+        const r = rectOf(el, box);
+        const d = Math.abs((axis === 'x' ? r.x + r.w / 2 : r.y + r.h / 2) - center);
+        if (d < distance) {
+          distance = d;
+          best = el;
+        }
+      }
+      return best;
+    };
+
+    const down = (e: PointerEvent) => {
+      if (e.button !== 0 || reducedMotion()) return;
+      pointer = e.pointerId;
+      handled = true;
+      try {
+        box.setPointerCapture(e.pointerId);
+      } catch {
+        // pointer already gone
+      }
+      const target = (e.target as Element).closest<HTMLElement>('[data-key]') ?? items()[0];
+      base = target ? rectOf(target, box) : last.current;
+      lastPos = axis === 'x' ? e.clientX : e.clientY;
+      lastTime = performance.now();
+      stretch = 1;
+      box.classList.add('pressing');
+      pill.classList.add('lens');
+      lensAt(lastPos);
+    };
+
+    const move = (e: PointerEvent) => {
+      if (e.pointerId !== pointer) return;
+      lensAt(axis === 'x' ? e.clientX : e.clientY);
+    };
+
+    const release = (e: PointerEvent, commit: boolean) => {
+      if (e.pointerId !== pointer) return;
+      pointer = null;
+      const chosen = commit ? under : null;
+      under?.classList.remove('under-lens');
+      under = null;
+      box.classList.remove('pressing');
+      pill.classList.remove('lens');
+
+      const settle = chosen ?? box.querySelector<HTMLElement>('[aria-current="page"]');
+      if (settle) {
+        const to = rectOf(settle, box);
+        last.current = to;
+        Object.assign(pill.style, frame(to));
+        if (current) {
+          pill.animate([frame(current.rect, current.sx, current.sy), frame(to)], {
+            duration: 520,
+            easing: 'cubic-bezier(0.34, 1.45, 0.64, 1)',
+          });
+        }
+      }
+      current = null;
+      const key = chosen?.dataset.key;
+      if (key) select.current(key);
+    };
+
+    const noDrag = (e: DragEvent) => e.preventDefault();
+    const up = (e: PointerEvent) => release(e, true);
+    const cancel = (e: PointerEvent) => release(e, false);
+    const click = (e: MouseEvent) => {
+      if (handled && e.detail !== 0) e.preventDefault();
+      handled = false;
+    };
+
+    box.addEventListener('pointerdown', down);
+    box.addEventListener('pointermove', move);
+    box.addEventListener('pointerup', up);
+    box.addEventListener('pointercancel', cancel);
+    box.addEventListener('click', click);
+    box.addEventListener('dragstart', noDrag);
+    return () => {
+      box.removeEventListener('dragstart', noDrag);
+      box.removeEventListener('pointerdown', down);
+      box.removeEventListener('pointermove', move);
+      box.removeEventListener('pointerup', up);
+      box.removeEventListener('pointercancel', cancel);
+      box.removeEventListener('click', click);
+    };
+  }, [container, axis]);
 }
