@@ -469,3 +469,31 @@ export function AddButton({ label, onClick }: { label: string; onClick: () => vo
     </button>
   );
 }
+
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+/** On iPhone Safari, explains how to install the app on the home screen. */
+export function InstallHint() {
+  const [show, setShow] = useState(() => isIOS() && !isStandalone() && localStorage.getItem('caixa.installHint') !== 'off');
+  if (!show) return null;
+  const close = () => {
+    localStorage.setItem('caixa.installHint', 'off');
+    setShow(false);
+  };
+  return (
+    <div className="glass install-hint" role="note">
+      <p>
+        <strong>Instale o Caixa no iPhone.</strong> Toque em{' '}
+        <svg className="share" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-label="Compartilhar">
+          <path d="M12 3v12M8 7l4-4 4 4" />
+          <path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8" />
+        </svg>{' '}
+        e depois em <strong>Adicionar à Tela de Início</strong>.
+      </p>
+      <button type="button" className="icon-btn" aria-label="Fechar dica" onClick={close}>
+        <Icon name="close" size={16} />
+      </button>
+    </div>
+  );
+}

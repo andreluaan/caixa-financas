@@ -4,7 +4,7 @@ import { isConfigured, supabase } from './lib/supabase';
 import { StoreProvider, useStore } from './lib/store';
 import { isDemo } from './lib/demo';
 import { backgrounds, useAppearance, type Appearance } from './lib/appearance';
-import { Backdrop, Icon, MemoryMark, useGlassLight, useLiquidNav, type IconName } from './components/ui';
+import { Backdrop, Icon, InstallHint, MemoryMark, useGlassLight, useLiquidNav, type IconName } from './components/ui';
 import { Login } from './pages/Login';
 import { Overview } from './pages/Overview';
 
@@ -171,6 +171,7 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
       </div>
 
       <TabBar route={route} go={go} />
+      <InstallHint />
 
       {error && (
         <div className="glass toast error" role="alert">
