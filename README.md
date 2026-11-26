@@ -5,12 +5,15 @@ App web instalável (PWA) que roda no PC e no celular, com dados no **Supabase**
 
 ## O que faz
 
-- **Lançamentos**: entradas e saídas com categoria, conta e data; a categoria é sugerida pelas palavras-chave.
+- **Resumo**: quanto você tem hoje, o que entrou e saiu no mês, a sobra prevista e gráficos (entradas × saídas em 6 meses e para onde foi o dinheiro).
+- **Lançamentos**: entradas e saídas com categoria, conta e data; a categoria é sugerida pelas palavras-chave. Toque num lançamento para editar ou excluir.
+- **Compras parceladas**: informe o total e o número de parcelas; cada parcela cai no mês certo (e na fatura certa do cartão).
+- **Contas a pagar e a receber**: mensais (aluguel, salário) ou de uma vez só (IPVA, um freela), com botão "Paguei"/"Recebi" que lança no extrato.
 - **Importar extrato**: OFX (qualquer banco) e CSV (Nubank conta, Nubank cartão e CSVs com colunas Data/Descrição/Valor).
   O arquivo é lido no navegador; você confere e escolhe o que entra. Reimportar o mesmo extrato não duplica.
 - **Orçamentos** mensais por categoria, com aviso em shu quando passa do limite.
 - **Metas** de economia com guardar/retirar.
-- **Contas e cartões**: saldo por conta, fatura do cartão pelo ciclo de fechamento e contas a pagar com botão "Paguei".
+- **Carteira**: saldo por conta, fatura do cartão pelo ciclo de fechamento e parcelamentos em aberto.
 
 ## Rodar sem Supabase (modo demonstração)
 
@@ -26,6 +29,7 @@ Abre com dados de exemplo em memória. Nada é salvo; recarregar a página volta
 1. Crie uma conta em <https://supabase.com> e um projeto novo (plano Free). Região sugerida: São Paulo (`sa-east-1`).
 2. No projeto, abra **SQL Editor → New query**, cole todo o conteúdo de `supabase/migrations/0001_init.sql` e clique **Run**.
    Isso cria as tabelas, liga o RLS (cada usuário só vê os próprios dados) e cria as categorias iniciais para cada conta nova.
+   Depois, numa nova query, rode também `supabase/migrations/0002_recorrentes_e_parcelas.sql` (contas a receber, contas únicas e parcelas).
 3. Em **Project Settings → API**, copie a *Project URL* e a chave *anon public*.
 4. Copie `.env.example` para `.env` e preencha:
    ```
@@ -68,6 +72,7 @@ Qualquer hospedagem de site estático serve. Exemplo com a Vercel (grátis):
 
 ```
 supabase/migrations/0001_init.sql   esquema, RLS e categorias iniciais
+supabase/migrations/0002_*.sql      contas a pagar/receber, únicas e parcelas
 src/lib/store.tsx                   dados (Supabase ou demo) e ações
 src/lib/calc.ts                     totais, orçamentos, fatura, contas a pagar
 src/lib/import.ts                   leitura de OFX/CSV e sugestão de categoria

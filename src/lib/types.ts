@@ -27,6 +27,9 @@ export interface Transaction {
   kind: Kind;
   occurred_on: string;
   import_key: string | null;
+  installment_group?: string | null;
+  installment_no?: number | null;
+  installments?: number | null;
 }
 
 export interface Budget {
@@ -43,11 +46,16 @@ export interface Goal {
   deadline: string | null;
 }
 
+export type Recurrence = 'monthly' | 'once';
+
 export interface Bill {
   id: string;
   name: string;
   amount: number;
-  due_day: number;
+  kind: Kind;
+  recurrence: Recurrence;
+  due_day: number | null;
+  due_date: string | null;
   category_id: string | null;
   account_id: string | null;
   last_paid_month: string | null;

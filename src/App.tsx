@@ -13,12 +13,14 @@ const pages = {
   budgets: () => import('./pages/Budgets').then((m) => ({ default: m.Budgets })),
   goals: () => import('./pages/Goals').then((m) => ({ default: m.Goals })),
   accounts: () => import('./pages/Accounts').then((m) => ({ default: m.Accounts })),
+  bills: () => import('./pages/Bills').then((m) => ({ default: m.Bills })),
   import: () => import('./pages/Import').then((m) => ({ default: m.Import })),
 };
 const Transactions = lazy(pages.transactions);
 const Budgets = lazy(pages.budgets);
 const Goals = lazy(pages.goals);
 const Accounts = lazy(pages.accounts);
+const Bills = lazy(pages.bills);
 const Import = lazy(pages.import);
 
 function Stagger() {
@@ -31,16 +33,18 @@ function Stagger() {
   return <span ref={mark} hidden />;
 }
 
-export type Route = 'overview' | 'transactions' | 'import' | 'budgets' | 'goals' | 'accounts';
+export type Route = 'overview' | 'transactions' | 'bills' | 'accounts' | 'budgets' | 'goals' | 'import';
 
-const routes: { id: Route; label: string; short: string; icon: IconName; group: string }[] = [
-  { id: 'overview', label: 'Visão geral', short: 'Início', icon: 'home', group: 'Geral' },
-  { id: 'transactions', label: 'Transações', short: 'Transações', icon: 'list', group: 'Geral' },
-  { id: 'import', label: 'Importar extrato', short: 'Importar', icon: 'upload', group: 'Geral' },
+const routes: { id: Route; label: string; short: string; icon: IconName; group: string; hidden?: boolean }[] = [
+  { id: 'overview', label: 'Visão geral', short: 'Início', icon: 'home', group: 'Dia a dia' },
+  { id: 'transactions', label: 'Transações', short: 'Extrato', icon: 'list', group: 'Dia a dia' },
+  { id: 'bills', label: 'Contas a pagar e receber', short: 'Contas', icon: 'calendar', group: 'Dia a dia' },
+  { id: 'accounts', label: 'Carteira e cartões', short: 'Carteira', icon: 'card', group: 'Dia a dia' },
   { id: 'budgets', label: 'Orçamentos', short: 'Orçamento', icon: 'pie', group: 'Planejar' },
   { id: 'goals', label: 'Metas', short: 'Metas', icon: 'target', group: 'Planejar' },
-  { id: 'accounts', label: 'Contas e cartões', short: 'Contas', icon: 'card', group: 'Planejar' },
+  { id: 'import', label: 'Importar extrato', short: 'Importar', icon: 'upload', group: 'Dia a dia', hidden: true },
 ];
+const visible = routes.filter((r) => !r.hidden);
 
 function readRoute(): Route {
   const hash = window.location.hash.replace('#/', '') as Route;
@@ -87,7 +91,7 @@ function TabBar({ route, go }: { route: Route; go: (r: Route) => void }) {
   return (
     <nav ref={bar} className="glass tabbar" aria-label="Seções">
       <span className="nav-pill" aria-hidden="true" />
-      {routes.map((r) => (
+      {visible.map((r) => (
         <a key={r.id} data-key={r.id} className="tab" href={`#/${r.id}`} aria-current={route === r.id ? 'page' : undefined}>
           <Icon name={r.icon} size={20} />
           <span>{r.short}</span>
@@ -100,7 +104,7 @@ function TabBar({ route, go }: { route: Route; go: (r: Route) => void }) {
 function Shell({ session, look }: { session: Session; look: Appearance }) {
   const [route, go] = useRoute();
   const { loading, error, clearError } = useStore();
-  const groups = [...new Set(routes.map((r) => r.group))];
+  const groups = [...new Set(visible.map((r) => r.group))];
   const nav = useRef<HTMLElement>(null);
   useGlassLight();
   useLiquidNav(nav, route, (key) => go(key as Route), 'y');
@@ -126,7 +130,7 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
           {groups.map((group) => (
             <div key={group} className="nav-group">
               <span className="mono nav-label">{group}</span>
-              {routes.filter((r) => r.group === group).map((r) => (
+              {visible.filter((r) => r.group === group).map((r) => (
                 <a key={r.id} data-key={r.id} className="nav-item" href={`#/${r.id}`} aria-current={route === r.id ? 'page' : undefined}>
                   <Icon name={r.icon} />
                   {r.label}
@@ -159,6 +163,7 @@ function Shell({ session, look }: { session: Session; look: Appearance }) {
               {route === 'budgets' && <Budgets />}
               {route === 'goals' && <Goals />}
               {route === 'accounts' && <Accounts />}
+              {route === 'bills' && <Bills />}
               <Stagger />
             </Suspense>
           </div>

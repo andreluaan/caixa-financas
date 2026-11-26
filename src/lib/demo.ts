@@ -1,3 +1,4 @@
+import { addMonths, splitInstallments } from './calc';
 import { currentMonth, lastMonths } from './format';
 import type { Account, Bill, Budget, Category, Goal, Transaction } from './types';
 
@@ -73,11 +74,41 @@ export function demoData() {
     { id: newId(), name: 'Reserva de emergência', target: 12000, saved: 7400, deadline: null },
     { id: newId(), name: 'Viagem de férias', target: 5000, saved: 2100, deadline: '2027-07-01' },
   ];
+  const bill = (b: Partial<Bill> & Pick<Bill, 'name' | 'amount'>): Bill => ({
+    id: newId(),
+    kind: 'out',
+    recurrence: 'monthly',
+    due_day: null,
+    due_date: null,
+    category_id: null,
+    account_id: 'a-bank',
+    last_paid_month: null,
+    active: true,
+    ...b,
+  });
   const bills: Bill[] = [
-    { id: newId(), name: 'Internet', amount: 119.9, due_day: 27, category_id: null, account_id: 'a-bank', last_paid_month: null, active: true },
-    { id: newId(), name: 'Energia', amount: 214.35, due_day: 28, category_id: null, account_id: 'a-bank', last_paid_month: null, active: true },
-    { id: newId(), name: 'Academia', amount: 99, due_day: 10, category_id: 'c-Saúde', account_id: 'a-card', last_paid_month: `${m}-01`, active: true },
+    bill({ name: 'Salário', amount: 6800, kind: 'in', due_day: 5, category_id: 'c-Renda', last_paid_month: `${m}-01` }),
+    bill({ name: 'Internet', amount: 119.9, due_day: 27 }),
+    bill({ name: 'Energia', amount: 214.35, due_day: 28 }),
+    bill({ name: 'Academia', amount: 99, due_day: 10, category_id: 'c-Saúde', account_id: 'a-card', last_paid_month: `${m}-01` }),
+    bill({ name: 'IPVA', amount: 1240, recurrence: 'once', due_date: addMonths(`${m}-15`, 1), category_id: 'c-Transporte' }),
+    bill({ name: 'Freela do site', amount: 1500, kind: 'in', recurrence: 'once', due_date: `${m}-30`, category_id: 'c-Renda' }),
   ];
+  const start = addMonths(`${m}-08`, -3);
+  const parcels = splitInstallments(3600, 10).map((amount, i) => ({
+    id: newId(),
+    description: `Notebook (${i + 1}/10)`,
+    amount,
+    kind: 'out' as const,
+    occurred_on: addMonths(start, i),
+    category_id: 'c-Outros',
+    account_id: 'a-card',
+    import_key: null,
+    installment_group: 'g-notebook',
+    installment_no: i + 1,
+    installments: 10,
+  }));
+  transactions.push(...parcels);
   transactions.sort((a, b) => b.occurred_on.localeCompare(a.occurred_on));
   return { accounts, categories, transactions, budgets, goals, bills };
 }

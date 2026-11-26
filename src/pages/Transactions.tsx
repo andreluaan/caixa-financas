@@ -3,7 +3,7 @@ import { useStore } from '../lib/store';
 import { brl, currentMonth, lastMonths, longMonth, monthKey, normalize } from '../lib/format';
 import { QuickAdd } from '../components/QuickAdd';
 import { TransactionList } from '../components/TransactionList';
-import { AddButton, Panel, Sheet } from '../components/ui';
+import { AddButton, Icon, Panel, Sheet } from '../components/ui';
 import type { Kind } from '../lib/types';
 
 export function Transactions() {
@@ -29,7 +29,18 @@ export function Transactions() {
 
   return (
     <>
-      <Panel title="Transações" action={<AddButton label="Lançar" onClick={() => setAdding(true)} />}>
+      <Panel
+        title="Transações"
+        action={
+          <div className="chips">
+            <a className="pill" href="#/import">
+              <Icon name="upload" size={14} />
+              Importar
+            </a>
+            <AddButton label="Lançar" onClick={() => setAdding(true)} />
+          </div>
+        }
+      >
         <div className="filters">
           <select className="field" aria-label="Mês" value={month} onChange={(e) => setMonth(e.target.value)}>
             <option value="all">Todos os meses</option>
@@ -49,7 +60,7 @@ export function Transactions() {
         <span className="muted num" style={{ fontSize: 13 }}>
           {items.length} {items.length === 1 ? 'lançamento' : 'lançamentos'} · saldo {brl(net)}
         </span>
-        <TransactionList items={items} deletable empty="Nada encontrado." />
+        <TransactionList items={items} empty="Nada encontrado." />
       </Panel>
 
       <Sheet open={adding} onClose={() => setAdding(false)} title="Novo lançamento">
