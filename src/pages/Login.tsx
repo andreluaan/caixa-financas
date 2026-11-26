@@ -2,6 +2,20 @@ import { useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { Field, MemoryMark } from '../components/ui';
 
+// Plain usernames become an address on a private domain, so no real e-mail is needed.
+const USERNAME_DOMAIN = 'caixa.local';
+const toEmail = (login: string) => {
+  const value = login.trim().toLowerCase();
+  return value.includes('@') ? value : `${value}@${USERNAME_DOMAIN}`;
+};
+
+const messages: Record<string, string> = {
+  'Invalid login credentials': 'Usuário ou senha incorretos.',
+  'User already registered': 'Esse usuário já existe. Entre com ele.',
+  'Signups not allowed for this instance': 'Novos cadastros estão desligados.',
+  'Email not confirmed': 'Conta ainda não confirmada.',
+};
+
 export function Login() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
@@ -13,13 +27,14 @@ export function Login() {
     e.preventDefault();
     setBusy(true);
     setMessage(null);
+    const address = toEmail(email);
     const result =
       mode === 'signin'
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
+        ? await supabase.auth.signInWithPassword({ email: address, password })
+        : await supabase.auth.signUp({ email: address, password, options: { emailRedirectTo: window.location.origin } });
     setBusy(false);
     if (result.error) {
-      setMessage(result.error.message);
+      setMessage(messages[result.error.message] ?? result.error.message);
     } else if (mode === 'signup' && !result.data.session) {
       setMessage('Conta criada. Confirme pelo link enviado ao seu e-mail e depois entre.');
       setMode('signin');
@@ -43,8 +58,19 @@ export function Login() {
           </h1>
           <div className="cut" />
         </div>
-        <Field label="E-mail">
-          <input className="field" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Field label="Usuário ou e-mail">
+          <input
+            className="field"
+            type="text"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            required
+            pattern="[A-Za-z0-9._@+-]{3,}"
+            title="Letras, números, ponto, hífen ou um e-mail"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </Field>
         <Field label="Senha">
           <input
