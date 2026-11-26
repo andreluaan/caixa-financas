@@ -563,6 +563,11 @@ table.preview td select { min-height: 36px; font-size: 13px; }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
+@keyframes hint-in {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: none; }
+}
+
 .backdrop > * { animation: fade-in 1.4s ease both; }
 .backdrop > .blob { animation: fade-in 1.4s ease both, drift 38s ease-in-out infinite alternate; }
 .backdrop > .blob.b2 { animation-duration: 1.4s, 46s; animation-delay: 0s, -12s; }
@@ -956,7 +961,7 @@ a, button, summary { -webkit-tap-highlight-color: transparent; }
   gap: 12px;
   align-items: center;
   font-size: 13px;
-  animation: toast-in 0.6s var(--ease-spring) 1s both;
+  animation: hint-in 0.6s var(--ease-spring) 1s both;
 }
 .install-hint p { margin: 0; flex: 1; line-height: 1.45; color: var(--ink-2); }
 .install-hint strong { color: var(--ink); font-weight: 500; }
